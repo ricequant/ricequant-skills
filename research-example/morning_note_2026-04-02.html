@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>晨会纪要</title>
+  <style>
+:root {
+  --paper: #fbf8f1;
+  --surface: #fffdf8;
+  --ink: #1d2430;
+  --muted: #5e6875;
+  --line: #d7d4ca;
+  --accent: #a6482f;
+  --accent-deep: #6b2f21;
+  --accent-soft: #efe2d7;
+  --table-head: #293241;
+  --code-bg: #f3efe8;
+  --quote-bg: #f5ede4;
+  --shadow: 0 24px 80px rgba(24, 31, 42, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(166, 72, 47, 0.10), transparent 32%),
+    linear-gradient(180deg, #f3ecdf 0%, var(--paper) 18%, #f7f4ee 100%);
+  color: var(--ink);
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
+  line-height: 1.75;
+}
+
+a {
+  color: inherit;
+}
+
+.page {
+  width: min(1200px, calc(100vw - 32px));
+  margin: 24px auto 64px;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 24px;
+}
+
+.sidebar {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  background: rgba(255, 253, 248, 0.94);
+  border: 1px solid rgba(107, 47, 33, 0.10);
+  border-radius: 20px;
+  padding: 24px 22px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.eyebrow {
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.sidebar-title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.25;
+}
+
+.meta-list {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.meta-list li + li {
+  margin-top: 8px;
+}
+
+.toc {
+  margin-top: 24px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+
+.toc-title {
+  margin: 0 0 10px;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.toc li + li {
+  margin-top: 8px;
+}
+
+.toc a {
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+
+.toc a:hover {
+  background: var(--accent-soft);
+  transform: translateX(2px);
+}
+
+.toc .level-3 a,
+.toc .level-4 a {
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.report {
+  background: var(--surface);
+  border: 1px solid rgba(41, 50, 65, 0.08);
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.cover {
+  padding: 56px 56px 44px;
+  background:
+    linear-gradient(135deg, rgba(166, 72, 47, 0.96), rgba(76, 33, 24, 0.95)),
+    linear-gradient(180deg, #784032 0%, #3d1e17 100%);
+  color: #fffaf3;
+}
+
+.cover-kicker {
+  margin: 0 0 10px;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.cover-title {
+  margin: 0;
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1.18;
+}
+
+.cover-subtitle {
+  margin: 16px 0 0;
+  font-size: 17px;
+  line-height: 1.6;
+  max-width: 56ch;
+  opacity: 0.92;
+}
+
+.cover-meta {
+  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+}
+
+.chip {
+  border: 1px solid rgba(255, 250, 243, 0.24);
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: rgba(255, 250, 243, 0.08);
+}
+
+.content {
+  padding: 40px 56px 56px;
+}
+
+.content h1,
+.content h2,
+.content h3,
+.content h4 {
+  scroll-margin-top: 24px;
+}
+
+.content h1 {
+  margin: 32px 0 16px;
+  font-size: 30px;
+  line-height: 1.28;
+  color: var(--accent-deep);
+}
+
+.content h2 {
+  margin: 36px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(166, 72, 47, 0.22);
+  font-size: 24px;
+  line-height: 1.3;
+  color: var(--accent-deep);
+}
+
+.content h3 {
+  margin: 26px 0 10px;
+  font-size: 19px;
+  line-height: 1.35;
+}
+
+.content h4 {
+  margin: 18px 0 8px;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.content p {
+  margin: 12px 0;
+  font-size: 15px;
+}
+
+.content ul,
+.content ol {
+  margin: 12px 0 16px;
+  padding-left: 24px;
+}
+
+.content li + li {
+  margin-top: 6px;
+}
+
+.content hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 28px 0;
+}
+
+.content blockquote {
+  margin: 18px 0;
+  padding: 14px 18px;
+  border-left: 4px solid var(--accent);
+  background: var(--quote-bg);
+  color: var(--muted);
+}
+
+.content code {
+  background: var(--code-bg);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 0.92em;
+  font-family: "SFMono-Regular", "Menlo", "Monaco", "Courier New", monospace;
+}
+
+.code-block {
+  overflow-x: auto;
+  background: #211f1c;
+  color: #f6efe7;
+  padding: 16px 18px;
+  border-radius: 16px;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0 12px;
+  table-layout: fixed;
+  font-size: 14px;
+}
+
+.content thead th {
+  background: var(--table-head);
+  color: #f8fafc;
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.content tbody td {
+  padding: 10px 12px;
+  border: 1px solid #ddd7cb;
+  vertical-align: top;
+}
+
+.content tbody tr:nth-child(even) td {
+  background: #fcf8f1;
+}
+
+.align-left {
+  text-align: left;
+}
+
+.align-center {
+  text-align: center;
+}
+
+.align-right {
+  text-align: right;
+}
+
+.source-note {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 13px;
+}
+
+.footer {
+  margin-top: 40px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+}
+
+@media (max-width: 980px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    width: calc(100vw - 18px);
+    margin: 10px auto 32px;
+    gap: 12px;
+  }
+
+  .cover,
+  .content {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .content table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .page {
+    width: auto;
+    margin: 0;
+    display: block;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .report {
+    box-shadow: none;
+    border: 0;
+  }
+
+  .cover {
+    page-break-after: always;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="page">
+    <aside class="sidebar">
+      <p class="eyebrow">RQ Report Renderer</p>
+      <h1 class="sidebar-title">晨会纪要</h1>
+      <ul class="meta-list"><li><strong>*核心观点**</strong> 今日晨会主线偏向公告催化，隔夜共出现 2 条高相关度公告，重点判断事项是否足以驱动资金重新定价。</li><li><strong>*盘前定位**</strong> 偏积极，优先跟踪强势股的延续性，同时确认是否有基本面或公告继续配合。</li><li><strong>*持仓建议**</strong> 结构性偏多，保留强势股跟踪仓位，但不宜在缺少新增催化时盲目追高。</li><li><strong>数据来源</strong> RQData，置信度5*</li></ul>
+      <nav class="toc">
+<p class="toc-title">Contents</p>
+<ul>
+<li class="level-2"><a href="#执行摘要">执行摘要</a></li>
+<li class="level-2"><a href="#隔夜动态">隔夜动态</a></li>
+<li class="level-3"><a href="#财务披露">财务披露</a></li>
+<li class="level-3"><a href="#重点公告">重点公告</a></li>
+<li class="level-3"><a href="#分红事项">分红事项</a></li>
+<li class="level-2"><a href="#昨日市场回顾">昨日市场回顾</a></li>
+<li class="level-2"><a href="#今日重点关注">今日重点关注</a></li>
+<li class="level-2"><a href="#交易观察">交易观察</a></li>
+<li class="level-2"><a href="#风险提示">风险提示</a></li>
+<li class="level-2"><a href="#附录生成说明">附录：生成说明</a></li>
+<li class="level-3"><a href="#输入文件加载情况">输入文件加载情况</a></li>
+</ul>
+</nav>
+    </aside>
+
+    <main class="report">
+      <section class="cover">
+        <p class="cover-kicker">Research Output</p>
+        <h1 class="cover-title">晨会纪要</h1>
+        <p class="cover-subtitle">由 Markdown 研究报告自动渲染的单文件 HTML。</p>
+        <div class="cover-meta"><span class="chip">Report Date 2026-04-02</span><span class="chip">Format Standalone HTML</span><span class="chip">Source RQ Research Markdown</span></div>
+      </section>
+
+      <section class="content">
+<h1 id="晨会纪要">晨会纪要</h1>
+<p>报告日期：2026-04-02 信息截面：2026-04-02 19:37:15 隔夜观察区间：2026-04-01 至 2026-04-02 覆盖范围：5只股票：宁德时代(300750.XSHE)、药明康德(603259.XSHG)、格力电器(000651.XSHE)、长江电力(600900.XSHG)、兴业银行(601166.XSHG)</p>
+<h2 id="执行摘要">执行摘要</h2>
+<p><strong>核心观点</strong>：今日晨会主线偏向公告催化，隔夜共出现 2 条高相关度公告，重点判断事项是否足以驱动资金重新定价。</p>
+<p>隔夜窗口内共识别出 0 条财务披露、2 条重点公告、0 条分红相关事项。</p>
+<p>覆盖股票池昨日平均涨跌幅为 -0.3%，沪深300 为 -1.0%；相对强势个股为 长江电力(600900.XSHG) +0.5%，相对偏弱个股为 宁德时代(300750.XSHE) -1.1%。</p>
+<p><strong>盘前定位</strong>：偏积极，优先跟踪强势股的延续性，同时确认是否有基本面或公告继续配合。</p>
+<p><strong>持仓建议</strong>：结构性偏多，保留强势股跟踪仓位，但不宜在缺少新增催化时盲目追高。</p>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="隔夜动态">隔夜动态</h2>
+<h3 id="财务披露">财务披露</h3>
+<ul><li>隔夜窗口内未识别到覆盖股票池新的财报披露记录。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h3 id="重点公告">重点公告</h3>
+<ul><li><strong>药明康德(603259.XSHG)</strong>：2026-04-02 披露 <code>药明康德:关于召开2025年度业绩说明会的公告</code>，归类为投资者交流，来源 上海证券交易所；盘前核查说明会主题、管理层出席安排以及是否可能释放新的经营口径。 <a href="http://static.sse.com.cn/disclosure/listedinfo/announcement/c/new/2026-04-02/603259_20260402_T50K.pdf" target="_blank" rel="noreferrer">原文</a></li><li><strong>宁德时代(300750.XSHE)</strong>：2026-04-02 披露 <code>宁德时代:关于回购公司A股股份的进展公告</code>，归类为资本运作，来源 深圳证券交易所；盘前核查回购、增减持或融资事项对流通预期和情绪面的影响。 <a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-04-02/93abb3e1-4be0-4c76-8132-57489cb3d701.PDF" target="_blank" rel="noreferrer">原文</a></li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h3 id="分红事项">分红事项</h3>
+<ul><li>隔夜窗口内未识别到新增分红披露或临近除权除息事项。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="昨日市场回顾">昨日市场回顾</h2>
+<p>覆盖股票池昨日平均涨跌幅 -0.3%，上涨 1 家、下跌 4 家、平盘 0 家；沪深300 为 -1.0%，样本单票平均成交额约为 35.16亿元。</p>
+<table><thead><tr><th class="align-left">股票</th><th class="align-right">收盘价</th><th class="align-right">涨跌幅</th><th class="align-right">成交额</th></tr></thead><tbody><tr><td class="align-left">长江电力(600900.XSHG)</td><td class="align-right">101.55</td><td class="align-right">+0.5%</td><td class="align-right">19.89亿元</td></tr><tr><td class="align-left">兴业银行(601166.XSHG)</td><td class="align-right">110.17</td><td class="align-right">-0.1%</td><td class="align-right">9.63亿元</td></tr><tr><td class="align-left">格力电器(000651.XSHE)</td><td class="align-right">8716.70</td><td class="align-right">-0.4%</td><td class="align-right">7.43亿元</td></tr><tr><td class="align-left">药明康德(603259.XSHG)</td><td class="align-right">262.63</td><td class="align-right">-0.6%</td><td class="align-right">48.97亿元</td></tr><tr><td class="align-left">宁德时代(300750.XSHE)</td><td class="align-right">770.12</td><td class="align-right">-1.1%</td><td class="align-right">89.88亿元</td></tr></tbody></table>
+<p>相对强势的 长江电力 录得 +0.5%，相对偏弱的 宁德时代 为 -1.1%，两者将优先进入今日盘前观察名单。 从广度看，当前覆盖池整体相对基准偏强；若开盘后强势股继续放量、弱势股未见新增利空，短线风格延续概率更高。</p>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="今日重点关注">今日重点关注</h2>
+<ul><li><strong>关注 药明康德(603259.XSHG)</strong>：最新公告为 <code>药明康德:关于召开2025年度业绩说明会的公告</code>，属于投资者交流，盘前需要判断该事项是否会带来预期修正；盘前核查说明会主题、管理层出席安排以及是否可能释放新的经营口径。</li><li><strong>关注 宁德时代(300750.XSHE)</strong>：最新公告为 <code>宁德时代:关于回购公司A股股份的进展公告</code>，属于资本运作，盘前需要判断该事项是否会带来预期修正；盘前核查回购、增减持或融资事项对流通预期和情绪面的影响。</li><li><strong>相对强势观察</strong>：长江电力(600900.XSHG) 昨日涨跌幅 +0.5%，相对沪深300 的超额收益约为 +1.5%，盘前重点观察是否存在公告或基本面配合。</li><li><strong>相对偏弱观察</strong>：宁德时代(300750.XSHE) 昨日涨跌幅 -1.1%，若开盘仍弱于板块，需要确认是否存在新增负面信息或前一日交易拥挤导致的补跌。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="交易观察">交易观察</h2>
+<ul><li><strong>强势延续观察：长江电力(600900.XSHG)</strong>。昨日录得 +0.5%，相对基准超额收益约 +1.5%；若盘前没有新的负面公告，开盘后的量价延续值得跟踪。</li><li>强势延续失效条件：若开盘后迅速跌回前一日收盘下方且成交并未放大，说明强势更多来自短线波动而非新增信息。</li><li><strong>弱势修复观察：宁德时代(300750.XSHE)</strong>。昨日表现为 -1.1%，若隔夜无新增利空且低开后快速收窄跌幅，可能形成短线修复观察点。</li><li>弱势修复失效条件：若弱势继续放量扩大且跑输板块，说明负面预期仍在发酵，应避免把技术性反弹误判为修复。</li><li><strong>公告催化观察：药明康德(603259.XSHG)</strong>。最新事项为 <code>药明康德:关于召开2025年度业绩说明会的公告</code>，属于投资者交流，需判断其是否足以驱动开盘后的资金聚焦。 <a href="http://static.sse.com.cn/disclosure/listedinfo/announcement/c/new/2026-04-02/603259_20260402_T50K.pdf" target="_blank" rel="noreferrer">原文</a></li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="风险提示">风险提示</h2>
+<ul><li>当前未识别到突出的新增风险，但仍需关注盘前公告增量、开盘量价和样本内强弱分化。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="附录生成说明">附录：生成说明</h2>
+<ul><li>报告按模板自动生成，报告日期为 2026-04-02，隔夜观察起始日为 2026-04-01。</li><li>事件优先级顺序：财报披露 -&gt; 重点公告 -&gt; 分红事项 -&gt; 相对强弱。</li><li>若公告记录含 <code>announcement_link</code>，正文会保留高优先级事项的原文链接，供后续 PDF 读取与抽取。</li><li>若输入文件缺失，脚本会保留章节并明确标记无数据，不会伪造内容。</li></ul>
+<h3 id="输入文件加载情况">输入文件加载情况</h3>
+<ul><li><code>stock_pool.json</code>：5 条记录</li><li><code>instrument_meta.json</code>：5 条记录</li><li><code>latest_earnings.json</code>：18 条记录</li><li><code>price_recent.json</code>：30 条记录</li><li><code>hs300_recent.json</code>：6 条记录</li><li><code>dividend_news.json</code>：0 条记录</li><li><code>announcement_raw.json</code>：11 条记录</li><li>缺失或空文件：dividend_news.json</li></ul>
+        <div class="footer">Generated by report-renderer/scripts/render_report.py</div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

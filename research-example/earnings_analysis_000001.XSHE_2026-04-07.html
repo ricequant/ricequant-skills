@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>财报分析报告</title>
+  <style>
+:root {
+  --paper: #fbf8f1;
+  --surface: #fffdf8;
+  --ink: #1d2430;
+  --muted: #5e6875;
+  --line: #d7d4ca;
+  --accent: #a6482f;
+  --accent-deep: #6b2f21;
+  --accent-soft: #efe2d7;
+  --table-head: #293241;
+  --code-bg: #f3efe8;
+  --quote-bg: #f5ede4;
+  --shadow: 0 24px 80px rgba(24, 31, 42, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(166, 72, 47, 0.10), transparent 32%),
+    linear-gradient(180deg, #f3ecdf 0%, var(--paper) 18%, #f7f4ee 100%);
+  color: var(--ink);
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
+  line-height: 1.75;
+}
+
+a {
+  color: inherit;
+}
+
+.page {
+  width: min(1200px, calc(100vw - 32px));
+  margin: 24px auto 64px;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 24px;
+}
+
+.sidebar {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  background: rgba(255, 253, 248, 0.94);
+  border: 1px solid rgba(107, 47, 33, 0.10);
+  border-radius: 20px;
+  padding: 24px 22px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.eyebrow {
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.sidebar-title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.25;
+}
+
+.meta-list {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.meta-list li + li {
+  margin-top: 8px;
+}
+
+.toc {
+  margin-top: 24px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+
+.toc-title {
+  margin: 0 0 10px;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.toc li + li {
+  margin-top: 8px;
+}
+
+.toc a {
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+
+.toc a:hover {
+  background: var(--accent-soft);
+  transform: translateX(2px);
+}
+
+.toc .level-3 a,
+.toc .level-4 a {
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.report {
+  background: var(--surface);
+  border: 1px solid rgba(41, 50, 65, 0.08);
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.cover {
+  padding: 56px 56px 44px;
+  background:
+    linear-gradient(135deg, rgba(166, 72, 47, 0.96), rgba(76, 33, 24, 0.95)),
+    linear-gradient(180deg, #784032 0%, #3d1e17 100%);
+  color: #fffaf3;
+}
+
+.cover-kicker {
+  margin: 0 0 10px;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.cover-title {
+  margin: 0;
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1.18;
+}
+
+.cover-subtitle {
+  margin: 16px 0 0;
+  font-size: 17px;
+  line-height: 1.6;
+  max-width: 56ch;
+  opacity: 0.92;
+}
+
+.cover-meta {
+  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+}
+
+.chip {
+  border: 1px solid rgba(255, 250, 243, 0.24);
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: rgba(255, 250, 243, 0.08);
+}
+
+.content {
+  padding: 40px 56px 56px;
+}
+
+.content h1,
+.content h2,
+.content h3,
+.content h4 {
+  scroll-margin-top: 24px;
+}
+
+.content h1 {
+  margin: 32px 0 16px;
+  font-size: 30px;
+  line-height: 1.28;
+  color: var(--accent-deep);
+}
+
+.content h2 {
+  margin: 36px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(166, 72, 47, 0.22);
+  font-size: 24px;
+  line-height: 1.3;
+  color: var(--accent-deep);
+}
+
+.content h3 {
+  margin: 26px 0 10px;
+  font-size: 19px;
+  line-height: 1.35;
+}
+
+.content h4 {
+  margin: 18px 0 8px;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.content p {
+  margin: 12px 0;
+  font-size: 15px;
+}
+
+.content ul,
+.content ol {
+  margin: 12px 0 16px;
+  padding-left: 24px;
+}
+
+.content li + li {
+  margin-top: 6px;
+}
+
+.content hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 28px 0;
+}
+
+.content blockquote {
+  margin: 18px 0;
+  padding: 14px 18px;
+  border-left: 4px solid var(--accent);
+  background: var(--quote-bg);
+  color: var(--muted);
+}
+
+.content code {
+  background: var(--code-bg);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 0.92em;
+  font-family: "SFMono-Regular", "Menlo", "Monaco", "Courier New", monospace;
+}
+
+.code-block {
+  overflow-x: auto;
+  background: #211f1c;
+  color: #f6efe7;
+  padding: 16px 18px;
+  border-radius: 16px;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0 12px;
+  table-layout: fixed;
+  font-size: 14px;
+}
+
+.content thead th {
+  background: var(--table-head);
+  color: #f8fafc;
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.content tbody td {
+  padding: 10px 12px;
+  border: 1px solid #ddd7cb;
+  vertical-align: top;
+}
+
+.content tbody tr:nth-child(even) td {
+  background: #fcf8f1;
+}
+
+.align-left {
+  text-align: left;
+}
+
+.align-center {
+  text-align: center;
+}
+
+.align-right {
+  text-align: right;
+}
+
+.source-note {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 13px;
+}
+
+.footer {
+  margin-top: 40px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+}
+
+@media (max-width: 980px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    width: calc(100vw - 18px);
+    margin: 10px auto 32px;
+    gap: 12px;
+  }
+
+  .cover,
+  .content {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .content table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .page {
+    width: auto;
+    margin: 0;
+    display: block;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .report {
+    box-shadow: none;
+    border: 0;
+  }
+
+  .cover {
+    page-break-after: always;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="page">
+    <aside class="sidebar">
+      <p class="eyebrow">RQ Report Renderer</p>
+      <h1 class="sidebar-title">财报分析报告</h1>
+      <ul class="meta-list"><li><strong>报告日期</strong> 2026-04-07</li><li><strong>公司</strong> 平安银行（000001.XSHE）</li><li><strong>最新财报期</strong> 2025Q4</li><li><strong>披露日</strong> 2026-03-21</li><li><strong>数据来源</strong> RQData，置信度5*</li></ul>
+      <nav class="toc">
+<p class="toc-title">Contents</p>
+<ul>
+<li class="level-2"><a href="#执行摘要">执行摘要</a></li>
+<li class="level-2"><a href="#信息截面">信息截面</a></li>
+<li class="level-2"><a href="#财报概览">财报概览</a></li>
+<li class="level-3"><a href="#单季度口径复盘">单季度口径复盘</a></li>
+<li class="level-3"><a href="#预期完成度">预期完成度</a></li>
+<li class="level-3"><a href="#近八个季度累计趋势">近八个季度累计趋势</a></li>
+<li class="level-3"><a href="#近八个季度单季趋势">近八个季度单季趋势</a></li>
+<li class="level-2"><a href="#市场预期卖方反馈与价格反应">市场预期、卖方反馈与价格反应</a></li>
+<li class="level-3"><a href="#价格反馈看板">价格反馈看板</a></li>
+<li class="level-3"><a href="#卖方研报口径">卖方研报口径</a></li>
+<li class="level-3"><a href="#研报摘要摘录">研报摘要摘录</a></li>
+<li class="level-3"><a href="#外部实时补充信息">外部实时补充信息</a></li>
+<li class="level-2"><a href="#公告原文与管理层表述">公告原文与管理层表述</a></li>
+<li class="level-3"><a href="#公告清单">公告清单</a></li>
+<li class="level-3"><a href="#公司介绍片段">公司介绍片段</a></li>
+<li class="level-3"><a href="#管理层表述片段">管理层表述片段</a></li>
+<li class="level-3"><a href="#风险提示片段">风险提示片段</a></li>
+<li class="level-3"><a href="#经营展望片段">经营展望片段</a></li>
+<li class="level-3"><a href="#补充说明">补充说明</a></li>
+<li class="level-2"><a href="#财务质量与资产负债表">财务质量与资产负债表</a></li>
+<li class="level-3"><a href="#近期-roe-取值">近期 ROE 取值</a></li>
+<li class="level-2"><a href="#投资逻辑更新">投资逻辑更新</a></li>
+<li class="level-3"><a href="#规则口径">规则口径</a></li>
+<li class="level-3"><a href="#外部语境摘录">外部语境摘录</a></li>
+<li class="level-2"><a href="#估值与定位">估值与定位</a></li>
+<li class="level-2"><a href="#风险提示">风险提示</a></li>
+<li class="level-2"><a href="#附录生成说明">附录：生成说明</a></li>
+</ul>
+</nav>
+    </aside>
+
+    <main class="report">
+      <section class="cover">
+        <p class="cover-kicker">Research Output</p>
+        <h1 class="cover-title">财报分析报告</h1>
+        <p class="cover-subtitle">公司：平安银行（000001.XSHE）</p>
+        <div class="cover-meta"><span class="chip">Report Date 2026-04-07</span><span class="chip">Format Standalone HTML</span><span class="chip">Source RQ Research Markdown</span></div>
+      </section>
+
+      <section class="content">
+<h1 id="财报分析报告">财报分析报告</h1>
+<ul><li>报告日期：2026-04-07</li><li>公司：平安银行（000001.XSHE）</li><li>最新财报期：2025Q4</li><li>披露日：2026-03-21</li></ul>
+<h2 id="执行摘要">执行摘要</h2>
+<ul><li>公司 <strong>平安银行</strong>（<code>000001.XSHE</code>）最新可分析财报季度为 <code>2025q4</code>，披露日为 <code>2026-03-21</code>，行业归属为 <code>银行 - 全国性股份制银行Ⅱ - 全国性股份制银行Ⅲ</code>。</li><li>累计口径收入 / 净利润为 1314.42亿元 / 426.33亿元，同比 -10.4% / -4.2%，环比 +30.6% / +11.2%。</li><li>单季度口径收入 / 净利润为 307.74亿元 / 42.94亿元，同比 -12.4% / -10.1%。</li><li>毛利率 / 净利率 / 现金转化率 / 资产负债率分别为 无数据 / 32.4% / 14.67x / 90.7%。</li><li>财报前 <code>2025</code> 年净利润一致预期为 415.29亿元；财报后口径已滚动至 <code>2026</code> 年，对应净利润一致预期为 422.63亿元；一致目标价为 14.05元 -&gt; 13.17元。</li><li>财报后 1D / 3D / 5D 个股收益为 -3.0% / +1.6% / +2.3%，3D 相对沪深300 超额收益为 +2.2%；反馈标签为 <code>符合预期</code>。</li><li>相关卖方研报样本 1 条，相关公告样本 5 条。</li><li>外部实时补充信息 0 条，主要用于补足管理层动态、业绩交流会、行业和政策语境。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="信息截面">信息截面</h2>
+<table><thead><tr><th class="align-left">维度</th><th class="align-left">当前值</th></tr></thead><tbody><tr><td class="align-left">最新财报季度</td><td class="align-left">2025Q4</td></tr><tr><td class="align-left">披露日</td><td class="align-left">2026-03-21</td></tr><tr><td class="align-left">行业</td><td class="align-left">银行 - 全国性股份制银行Ⅱ - 全国性股份制银行Ⅲ</td></tr><tr><td class="align-left">上市日期</td><td class="align-left">1991-04-03</td></tr><tr><td class="align-left">办公地址</td><td class="align-left">中国广东省深圳市深南东路5047号;中国广东省深圳市福田区益田路5023号平安金融中心B座</td></tr><tr><td class="align-left">总市值</td><td class="align-left">2140.47亿元</td></tr><tr><td class="align-left">PE / PB / 股息率</td><td class="align-left">5.0x / 0.47x / 5.4%</td></tr><tr><td class="align-left">财报前净利润一致预期（2025E）</td><td class="align-left">415.29亿元</td></tr><tr><td class="align-left">财报后净利润一致预期（2026E）</td><td class="align-left">422.63亿元</td></tr><tr><td class="align-left">高度相关研报样本</td><td class="align-left">1 条</td></tr><tr><td class="align-left">相关公告样本</td><td class="align-left">5 条</td></tr></tbody></table>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="财报概览">财报概览</h2>
+<ul><li>最新累计收入 / 净利润分别为 1314.42亿元 / 426.33亿元，对应净利率 32.4%。</li><li>可比同期为 <code>2024Q4</code>，上一季度为 <code>2025Q3</code>。</li><li>若拆为单季度口径，本期收入 / 净利润 / 经营现金流为 307.74亿元 / 42.94亿元 / 3047.13亿元。</li></ul>
+<table><thead><tr><th class="align-left">指标</th><th class="align-left">2025Q4</th><th class="align-left">2024Q4</th><th class="align-left">同比/变化</th><th class="align-left">2025Q3</th><th class="align-left">环比/变化</th></tr></thead><tbody><tr><td class="align-left">营业收入</td><td class="align-left">1314.42亿元</td><td class="align-left">1466.95亿元</td><td class="align-left">-10.4%</td><td class="align-left">1006.68亿元</td><td class="align-left">+30.6%</td></tr><tr><td class="align-left">净利润</td><td class="align-left">426.33亿元</td><td class="align-left">445.08亿元</td><td class="align-left">-4.2%</td><td class="align-left">383.39亿元</td><td class="align-left">+11.2%</td></tr><tr><td class="align-left">毛利率</td><td class="align-left">无数据</td><td class="align-left">无数据</td><td class="align-left">无数据</td><td class="align-left">无数据</td><td class="align-left">无数据</td></tr><tr><td class="align-left">ROE</td><td class="align-left">9.2%</td><td class="align-left">无数据</td><td class="align-left">无数据</td><td class="align-left">无数据</td><td class="align-left">无数据</td></tr></tbody></table>
+<h3 id="单季度口径复盘">单季度口径复盘</h3>
+<table><thead><tr><th class="align-left">指标</th><th class="align-left">2025Q4 单季</th><th class="align-left">2024Q4 单季</th><th class="align-left">同比/变化</th></tr></thead><tbody><tr><td class="align-left">营业收入</td><td class="align-left">307.74亿元</td><td class="align-left">351.13亿元</td><td class="align-left">-12.4%</td></tr><tr><td class="align-left">净利润</td><td class="align-left">42.94亿元</td><td class="align-left">47.79亿元</td><td class="align-left">-10.1%</td></tr><tr><td class="align-left">经营现金流</td><td class="align-left">3047.13亿元</td><td class="align-left">-77.40亿元</td><td class="align-left">-4036.9%</td></tr><tr><td class="align-left">单季毛利率</td><td class="align-left">无数据</td><td class="align-left">无数据</td><td class="align-left">无数据</td></tr></tbody></table>
+<h3 id="预期完成度">预期完成度</h3>
+<table><thead><tr><th class="align-left">口径</th><th class="align-left">财报前一致预期</th><th class="align-left">当前累计值</th><th class="align-left">完成度</th></tr></thead><tbody><tr><td class="align-left">收入</td><td class="align-left">1308.57亿元</td><td class="align-left">1314.42亿元</td><td class="align-left">100.4%</td></tr><tr><td class="align-left">净利润</td><td class="align-left">415.29亿元</td><td class="align-left">426.33亿元</td><td class="align-left">102.7%</td></tr><tr><td class="align-left">EPS</td><td class="align-left">2.14元</td><td class="align-left">2.18元</td><td class="align-left">无数据</td></tr></tbody></table>
+<h3 id="近八个季度累计趋势">近八个季度累计趋势</h3>
+<table><thead><tr><th class="align-left">季度</th><th class="align-left">收入</th><th class="align-left">净利润</th><th class="align-left">收入同比</th><th class="align-left">净利润同比</th></tr></thead><tbody><tr><td class="align-left">2025Q4</td><td class="align-left">1314.42亿元</td><td class="align-left">426.33亿元</td><td class="align-left">-10.4%</td><td class="align-left">-4.2%</td></tr><tr><td class="align-left">2025Q3</td><td class="align-left">1006.68亿元</td><td class="align-left">383.39亿元</td><td class="align-left">-9.8%</td><td class="align-left">-3.5%</td></tr><tr><td class="align-left">2025Q2</td><td class="align-left">693.85亿元</td><td class="align-left">248.70亿元</td><td class="align-left">-10.0%</td><td class="align-left">-3.9%</td></tr><tr><td class="align-left">2025Q1</td><td class="align-left">337.09亿元</td><td class="align-left">140.96亿元</td><td class="align-left">-13.1%</td><td class="align-left">-5.6%</td></tr><tr><td class="align-left">2024Q4</td><td class="align-left">1466.95亿元</td><td class="align-left">445.08亿元</td><td class="align-left">无数据</td><td class="align-left">无数据</td></tr><tr><td class="align-left">2024Q3</td><td class="align-left">1115.82亿元</td><td class="align-left">397.29亿元</td><td class="align-left">无数据</td><td class="align-left">无数据</td></tr><tr><td class="align-left">2024Q2</td><td class="align-left">771.32亿元</td><td class="align-left">258.79亿元</td><td class="align-left">无数据</td><td class="align-left">无数据</td></tr><tr><td class="align-left">2024Q1</td><td class="align-left">387.70亿元</td><td class="align-left">149.32亿元</td><td class="align-left">无数据</td><td class="align-left">无数据</td></tr></tbody></table>
+<h3 id="近八个季度单季趋势">近八个季度单季趋势</h3>
+<table><thead><tr><th class="align-left">季度</th><th class="align-left">单季收入</th><th class="align-left">单季净利润</th><th class="align-left">单季收入同比</th><th class="align-left">单季净利润同比</th></tr></thead><tbody><tr><td class="align-left">2025Q4</td><td class="align-left">307.74亿元</td><td class="align-left">42.94亿元</td><td class="align-left">-12.4%</td><td class="align-left">-10.1%</td></tr><tr><td class="align-left">2025Q3</td><td class="align-left">312.83亿元</td><td class="align-left">134.69亿元</td><td class="align-left">-9.2%</td><td class="align-left">-2.8%</td></tr><tr><td class="align-left">2025Q2</td><td class="align-left">356.76亿元</td><td class="align-left">107.74亿元</td><td class="align-left">-7.0%</td><td class="align-left">-1.6%</td></tr><tr><td class="align-left">2025Q1</td><td class="align-left">337.09亿元</td><td class="align-left">140.96亿元</td><td class="align-left">-13.1%</td><td class="align-left">-5.6%</td></tr><tr><td class="align-left">2024Q4</td><td class="align-left">351.13亿元</td><td class="align-left">47.79亿元</td><td class="align-left">无数据</td><td class="align-left">无数据</td></tr><tr><td class="align-left">2024Q3</td><td class="align-left">344.50亿元</td><td class="align-left">138.50亿元</td><td class="align-left">无数据</td><td class="align-left">无数据</td></tr><tr><td class="align-left">2024Q2</td><td class="align-left">383.62亿元</td><td class="align-left">109.47亿元</td><td class="align-left">无数据</td><td class="align-left">无数据</td></tr><tr><td class="align-left">2024Q1</td><td class="align-left">387.70亿元</td><td class="align-left">149.32亿元</td><td class="align-left">无数据</td><td class="align-left">无数据</td></tr></tbody></table>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="市场预期卖方反馈与价格反应">市场预期、卖方反馈与价格反应</h2>
+<ul><li>财报前口径对应 <code>2025</code> 年收入一致预期 1308.57亿元；财报后最新口径已滚动至 <code>2026</code> 年，对应收入一致预期 1315.36亿元。</li><li>财报前口径对应 <code>2025</code> 年净利润一致预期 415.29亿元；财报后最新口径已滚动至 <code>2026</code> 年，对应净利润一致预期 422.63亿元。</li><li>财报前后一致目标价为 14.05元 -&gt; 13.17元，变化 -6.3%；成交额中位数倍数为 1.14x。</li></ul>
+<table><thead><tr><th class="align-left">口径</th><th class="align-left">财报前</th><th class="align-left">财报后</th><th class="align-left">变化</th></tr></thead><tbody><tr><td class="align-left">收入一致预期（2025E -&gt; 2026E）</td><td class="align-left">1308.57亿元</td><td class="align-left">1315.36亿元</td><td class="align-left">无数据</td></tr><tr><td class="align-left">净利润一致预期（2025E -&gt; 2026E）</td><td class="align-left">415.29亿元</td><td class="align-left">422.63亿元</td><td class="align-left">无数据</td></tr><tr><td class="align-left">EPS 一致预期（2025E -&gt; 2026E）</td><td class="align-left">2.14元</td><td class="align-left">2.18元</td><td class="align-left">无数据</td></tr><tr><td class="align-left">一致目标价</td><td class="align-left">14.05元</td><td class="align-left">13.17元</td><td class="align-left">-6.3%</td></tr></tbody></table>
+<h3 id="价格反馈看板">价格反馈看板</h3>
+<table><thead><tr><th class="align-left">窗口</th><th class="align-left">个股收益</th><th class="align-left">基准收益</th><th class="align-left">超额收益</th><th class="align-left">成交额变化</th></tr></thead><tbody><tr><td class="align-left">1D</td><td class="align-left">-3.0%</td><td class="align-left">-3.3%</td><td class="align-left">+0.3%</td><td class="align-left">1.14x</td></tr><tr><td class="align-left">3D</td><td class="align-left">+1.6%</td><td class="align-left">-0.6%</td><td class="align-left">+2.2%</td><td class="align-left">1.14x</td></tr><tr><td class="align-left">5D</td><td class="align-left">+2.3%</td><td class="align-left">-1.4%</td><td class="align-left">+3.7%</td><td class="align-left">1.14x</td></tr></tbody></table>
+<h3 id="卖方研报口径">卖方研报口径</h3>
+<table><thead><tr><th class="align-left">日期</th><th class="align-left">机构</th><th class="align-left">标题</th><th class="align-left">2025E 净利润</th><th class="align-left">目标价</th></tr></thead><tbody><tr><td class="align-left">2026-03-23</td><td class="align-left">国盛证券</td><td class="align-left">平安银行：筑底显韧性 静待拐点来</td><td class="align-left">无数据</td><td class="align-left">无数据</td></tr></tbody></table>
+<h3 id="研报摘要摘录">研报摘要摘录</h3>
+<ul><li><code>2026-03-23</code> <strong>国盛证券</strong>：平安银行：筑底显韧性 静待拐点来。摘要：详细请查看附件</li></ul>
+<h3 id="外部实时补充信息">外部实时补充信息</h3>
+<table><thead><tr><th class="align-left">日期</th><th class="align-left">主题</th><th class="align-left">类型</th><th class="align-left">摘要</th><th class="align-left">来源/置信度</th></tr></thead><tbody><tr><td class="align-left">无数据</td><td class="align-left">-</td><td class="align-left">-</td><td class="align-left">-</td><td class="align-left">-</td></tr></tbody></table>
+<ul><li>当前未补充外部实时信息。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="公告原文与管理层表述">公告原文与管理层表述</h2>
+<table><thead><tr><th class="align-left">日期</th><th class="align-left">标题</th><th class="align-left">类型</th><th class="align-left">来源</th><th class="align-left">正文说明</th><th class="align-left">链接</th></tr></thead><tbody><tr><td class="align-left">2026-03-21</td><td class="align-left">平安银行:2025年年度报告摘要</td><td class="align-left">定期报告</td><td class="align-left">深圳证券交易所</td><td class="align-left">保留原文链接，未抽取正文</td><td class="align-left"><a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-21/df26e8e9-9a30-4dbc-8c31-a540ecfa9e4a.PDF" target="_blank" rel="noreferrer">原文</a></td></tr><tr><td class="align-left">2026-03-21</td><td class="align-left">平安银行:2025年年度报告</td><td class="align-left">定期报告</td><td class="align-left">深圳证券交易所</td><td class="align-left">已提炼关键片段</td><td class="align-left"><a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-21/dfd80de4-dbef-407a-981a-6b62cfef0d8b.PDF" target="_blank" rel="noreferrer">原文</a></td></tr><tr><td class="align-left">2026-03-14</td><td class="align-left">平安银行:关于召开2025年度业绩说明会的公告</td><td class="align-left">临时公告</td><td class="align-left">深圳证券交易所</td><td class="align-left">保留原文链接，未抽取正文</td><td class="align-left"><a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-14/e8315349-94ec-49b1-a6cc-4b85973b53d3.PDF" target="_blank" rel="noreferrer">原文</a></td></tr><tr><td class="align-left">2026-03-21</td><td class="align-left">平安银行:拟续聘2026年度会计师事务所的公告</td><td class="align-left">临时公告</td><td class="align-left">深圳证券交易所</td><td class="align-left">保留原文链接，未抽取正文</td><td class="align-left"><a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-21/10ad6e3e-6397-435d-ab1c-57fef86b9f9a.PDF" target="_blank" rel="noreferrer">原文</a></td></tr><tr><td class="align-left">2026-03-21</td><td class="align-left">平安银行:2025年度内部控制评价报告</td><td class="align-left">临时公告</td><td class="align-left">深圳证券交易所</td><td class="align-left">提炼到部分片段</td><td class="align-left"><a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-21/097f486c-d32d-4d9a-809f-6944f5baf0e3.PDF" target="_blank" rel="noreferrer">原文</a></td></tr></tbody></table>
+<h3 id="公告清单">公告清单</h3>
+<ul><li><code>2026-03-21</code> 平安银行:2025年年度报告摘要；类型：定期报告；来源：深圳证券交易所；<a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-21/df26e8e9-9a30-4dbc-8c31-a540ecfa9e4a.PDF" target="_blank" rel="noreferrer">原文</a></li><li><code>2026-03-21</code> 平安银行:2025年年度报告；类型：定期报告；来源：深圳证券交易所；<a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-21/dfd80de4-dbef-407a-981a-6b62cfef0d8b.PDF" target="_blank" rel="noreferrer">原文</a></li><li><code>2026-03-14</code> 平安银行:关于召开2025年度业绩说明会的公告；类型：临时公告；来源：深圳证券交易所；<a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-14/e8315349-94ec-49b1-a6cc-4b85973b53d3.PDF" target="_blank" rel="noreferrer">原文</a></li><li><code>2026-03-21</code> 平安银行:拟续聘2026年度会计师事务所的公告；类型：临时公告；来源：深圳证券交易所；<a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-21/10ad6e3e-6397-435d-ab1c-57fef86b9f9a.PDF" target="_blank" rel="noreferrer">原文</a></li><li><code>2026-03-21</code> 平安银行:2025年度内部控制评价报告；类型：临时公告；来源：深圳证券交易所；<a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-21/097f486c-d32d-4d9a-809f-6944f5baf0e3.PDF" target="_blank" rel="noreferrer">原文</a></li></ul>
+<h3 id="公司介绍片段">公司介绍片段</h3>
+<ul><li><code>平安银行:2025年年度报告</code>：平安银行股份有限公司（股票代码：000001，深圳证券交易所上市），法定代表人谢永林，注册地址位于广东省深圳市罗湖区深南东路5047号。公司成立于1987年12月，是中国领先的股份制商业银行，以中国最卓越、全球领先的智能化零售银行为战略目标。</li></ul>
+<h3 id="管理层表述片段">管理层表述片段</h3>
+<ul><li><code>平安银行:2025年年度报告</code>：2025年，平安银行坚持零售做强、对公做精、同业做专战略方针，整体业务经营保持稳健。全年实现营业收入1,314.42亿元，同比下降10.4%，主要受贷款利率下行及市场波动影响；净息差1.78%，同比下降9个基点。通过数字化转型驱动降本增效，业务及管理费381.96亿元，同比下降5.9%；信用及其他资产减值损失405.67亿元，同比下降17.9%。实现净利润426.33亿元，同比下降4.2%。资产端：截至2025年末，集团资产总额59,2...</li></ul>
+<h3 id="风险提示片段">风险提示片段</h3>
+<ul><li><code>平安银行:2025年年度报告</code>：公司主要面临信用风险、市场风险、流动性风险、操作风险、国别风险、银行账簿利率风险、声誉风险、战略风险、合规风险、洗钱风险、法律风险和信息科技风险等。公司已采取各种措施有效管理和控制各类经营风险。2025年度利润分配预案：以总股本19,405,918,198股为基数，全年每10股派发现金股利5.96元（含税），其中中期已派2.36元，末期拟派3.60元，不送红股，不以公积金转增股本。</li><li><code>平安银行:2025年度内部控制评价报告</code>：平安银行2025年度内部控制评价报告显示，公司内部控制体系运行有效，未发现重大缺陷。公司持续完善内部控制机制，强化合规管理，确保各项业务合规稳健运营。</li></ul>
+<h3 id="经营展望片段">经营展望片段</h3>
+<ul><li><code>平安银行:2025年年度报告</code>：平安银行将紧跟国家政策导向，坚持中国最卓越、全球领先的智能化零售银行战略目标，持续深化战略转型。零售业务：围绕效益优先、兼顾规模目标，优化贷款结构，提升优质客群占比，推进大财富管理业务高质量发展。对公业务：聚焦重点行业和优质客户，加大科技企业、绿色金融等领域支持力度，推动对公业务精细化经营。数字化转型：持续深化数字化能力建设，提升运营效率，强化风险管理，助推高质量发展。</li></ul>
+<h3 id="补充说明">补充说明</h3>
+<ul><li><code>平安银行:2025年度内部控制评价报告</code>：正文未形成可直接引用片段，报告保留原文链接供查阅。</li></ul>
+<p class="source-note"><em>数据来源：RQData（公告链接 / 可选原文提取），置信度5</em></p>
+<h2 id="财务质量与资产负债表">财务质量与资产负债表</h2>
+<ul><li>经营现金流 / 现金转化率 / 总资产 / 总负债分别为 6253.58亿元 / 14.67x / 59257.77亿元 / 53745.93亿元。</li><li>资产负债率 / 最新 ROE / 当前 PB 分别为 90.7% / 9.2% / 0.47x。</li></ul>
+<table><thead><tr><th class="align-left">维度</th><th class="align-left">当前值</th><th class="align-left">备注</th></tr></thead><tbody><tr><td class="align-left">经营现金流</td><td class="align-left">6253.58亿元</td><td class="align-left">累计口径</td></tr><tr><td class="align-left">现金转化率</td><td class="align-left">14.67x</td><td class="align-left">经营现金流 / 净利润</td></tr><tr><td class="align-left">总资产</td><td class="align-left">59257.77亿元</td><td class="align-left">累计口径</td></tr><tr><td class="align-left">总负债</td><td class="align-left">53745.93亿元</td><td class="align-left">累计口径</td></tr><tr><td class="align-left">资产负债率</td><td class="align-left">90.7%</td><td class="align-left">总负债 / 总资产</td></tr><tr><td class="align-left">最新 ROE</td><td class="align-left">9.2%</td><td class="align-left">最近非空因子日</td></tr><tr><td class="align-left">当前 PB</td><td class="align-left">0.47x</td><td class="align-left">最近非空因子日</td></tr></tbody></table>
+<h3 id="近期-roe-取值">近期 ROE 取值</h3>
+<table><thead><tr><th class="align-left">日期</th><th class="align-left">ROE</th></tr></thead><tbody><tr><td class="align-left">2026-03-31</td><td class="align-left">9.2%</td></tr><tr><td class="align-left">2026-04-01</td><td class="align-left">9.2%</td></tr><tr><td class="align-left">2026-04-02</td><td class="align-left">9.2%</td></tr><tr><td class="align-left">2026-04-03</td><td class="align-left">9.2%</td></tr><tr><td class="align-left">2026-04-07</td><td class="align-left">9.2%</td></tr></tbody></table>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="投资逻辑更新">投资逻辑更新</h2>
+<table><thead><tr><th class="align-left">验证支柱</th><th class="align-left">结果</th><th class="align-left">证据</th></tr></thead><tbody><tr><td class="align-left">增长口径</td><td class="align-left">未通过</td><td class="align-left">收入同比 -10.4%；净利润同比 -4.2%</td></tr><tr><td class="align-left">质量口径</td><td class="align-left">未通过</td><td class="align-left">毛利率变动 无数据；现金转化率 14.67x</td></tr><tr><td class="align-left">市场反馈</td><td class="align-left">通过</td><td class="align-left">3D 超额收益 +2.2%；成交额倍数 1.14x</td></tr><tr><td class="align-left">公告链路</td><td class="align-left">通过</td><td class="align-left">相关公告 5 条；正文读取结果 5 条</td></tr><tr><td class="align-left">外部语境</td><td class="align-left">未通过</td><td class="align-left">外部补充信息 0 条</td></tr></tbody></table>
+<h3 id="规则口径">规则口径</h3>
+<ul><li>增长口径：收入同比 &gt; 0 且净利润同比 &gt; 0。</li><li>质量口径：现金转化率 &gt;= 1x 且毛利率同比变动 &gt;= -1pct。</li><li>市场反馈：3D 超额收益 &gt;= 0。</li><li>公告链路：报告期附近存在正式财报/主要经营数据/业绩说明会公告。</li><li>外部语境：只补充 RQData 无法直接提供的管理层动态、行业和政策背景，不替代财务与公告主源。</li></ul>
+<h3 id="外部语境摘录">外部语境摘录</h3>
+<ul><li>当前未补充外部实时信息。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="估值与定位">估值与定位</h2>
+<ul><li>当前市值约为 2140.47亿元，PE / PB / 股息率分别约为 5.0x / 0.47x / 5.4%。</li><li>财报后一致目标价为 13.17元；高度相关研报目标价中位数为 无数据。</li></ul>
+<table><thead><tr><th class="align-left">指标</th><th class="align-left">当前值</th><th class="align-left">附注</th></tr></thead><tbody><tr><td class="align-left">总市值</td><td class="align-left">2140.47亿元</td><td class="align-left">最近非空因子日</td></tr><tr><td class="align-left">PE</td><td class="align-left">5.0x</td><td class="align-left">最近非空因子日</td></tr><tr><td class="align-left">PB</td><td class="align-left">0.47x</td><td class="align-left">最近非空因子日</td></tr><tr><td class="align-left">股息率</td><td class="align-left">5.4%</td><td class="align-left">bps 已换算为百分比</td></tr><tr><td class="align-left">财报前一致目标价</td><td class="align-left">14.05元</td><td class="align-left">一致预期快照</td></tr><tr><td class="align-left">财报后一致目标价</td><td class="align-left">13.17元</td><td class="align-left">一致预期快照</td></tr><tr><td class="align-left">研报目标价中位数</td><td class="align-left">无数据</td><td class="align-left">高度相关财报点评样本</td></tr></tbody></table>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="风险提示">风险提示</h2>
+<table><thead><tr><th class="align-left">风险维度</th><th class="align-left">当前证据</th><th class="align-left">口径</th><th class="align-left">来源</th></tr></thead><tbody><tr><td class="align-left">原文风险提示</td><td class="align-left"><code>平安银行:2025年年度报告</code>：公司主要面临信用风险、市场风险、流动性风险、操作风险、国别风险、银行账簿利率风险、声誉...</td><td class="align-left">财报原文片段</td><td class="align-left">公告原文提取</td></tr></tbody></table>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="附录生成说明">附录：生成说明</h2>
+<ul><li>报告日期：2026-04-07；公司：平安银行（000001.XSHE）；最新财报季度：2025q4；披露日：2026-03-21。</li><li>行业：银行 - 全国性股份制银行Ⅱ - 全国性股份制银行Ⅲ；上市日期：1991-04-03；办公地址：中国广东省深圳市深南东路5047号;中国广东省深圳市福田区益田路5023号平安金融中心B座。</li><li>一致预期口径使用财报披露前最后一条快照与报告日最新快照；本次读取的财报前年份为 2025 年，财报后滚动年份为 2026 年。</li><li>Q2、Q3、Q4 等累计披露口径已拆分为单季度口径，避免将累计值误读为单季变化。</li><li>股息率原始值为 bps，文中已统一换算为百分比。</li><li>公告章节优先引用年报或半年报正文片段，其他公告保留原文链接供查阅。</li><li>外部实时补充信息：0 条；仅用于补充管理层动态、行业和政策语境，不替代 RQData 财务、预期和公告主源。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+        <div class="footer">Generated by report-renderer/scripts/render_report.py</div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

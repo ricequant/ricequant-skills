@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>行业概览报告</title>
+  <style>
+:root {
+  --paper: #fbf8f1;
+  --surface: #fffdf8;
+  --ink: #1d2430;
+  --muted: #5e6875;
+  --line: #d7d4ca;
+  --accent: #a6482f;
+  --accent-deep: #6b2f21;
+  --accent-soft: #efe2d7;
+  --table-head: #293241;
+  --code-bg: #f3efe8;
+  --quote-bg: #f5ede4;
+  --shadow: 0 24px 80px rgba(24, 31, 42, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(166, 72, 47, 0.10), transparent 32%),
+    linear-gradient(180deg, #f3ecdf 0%, var(--paper) 18%, #f7f4ee 100%);
+  color: var(--ink);
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
+  line-height: 1.75;
+}
+
+a {
+  color: inherit;
+}
+
+.page {
+  width: min(1200px, calc(100vw - 32px));
+  margin: 24px auto 64px;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 24px;
+}
+
+.sidebar {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  background: rgba(255, 253, 248, 0.94);
+  border: 1px solid rgba(107, 47, 33, 0.10);
+  border-radius: 20px;
+  padding: 24px 22px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.eyebrow {
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.sidebar-title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.25;
+}
+
+.meta-list {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.meta-list li + li {
+  margin-top: 8px;
+}
+
+.toc {
+  margin-top: 24px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+
+.toc-title {
+  margin: 0 0 10px;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.toc li + li {
+  margin-top: 8px;
+}
+
+.toc a {
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+
+.toc a:hover {
+  background: var(--accent-soft);
+  transform: translateX(2px);
+}
+
+.toc .level-3 a,
+.toc .level-4 a {
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.report {
+  background: var(--surface);
+  border: 1px solid rgba(41, 50, 65, 0.08);
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.cover {
+  padding: 56px 56px 44px;
+  background:
+    linear-gradient(135deg, rgba(166, 72, 47, 0.96), rgba(76, 33, 24, 0.95)),
+    linear-gradient(180deg, #784032 0%, #3d1e17 100%);
+  color: #fffaf3;
+}
+
+.cover-kicker {
+  margin: 0 0 10px;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.cover-title {
+  margin: 0;
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1.18;
+}
+
+.cover-subtitle {
+  margin: 16px 0 0;
+  font-size: 17px;
+  line-height: 1.6;
+  max-width: 56ch;
+  opacity: 0.92;
+}
+
+.cover-meta {
+  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+}
+
+.chip {
+  border: 1px solid rgba(255, 250, 243, 0.24);
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: rgba(255, 250, 243, 0.08);
+}
+
+.content {
+  padding: 40px 56px 56px;
+}
+
+.content h1,
+.content h2,
+.content h3,
+.content h4 {
+  scroll-margin-top: 24px;
+}
+
+.content h1 {
+  margin: 32px 0 16px;
+  font-size: 30px;
+  line-height: 1.28;
+  color: var(--accent-deep);
+}
+
+.content h2 {
+  margin: 36px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(166, 72, 47, 0.22);
+  font-size: 24px;
+  line-height: 1.3;
+  color: var(--accent-deep);
+}
+
+.content h3 {
+  margin: 26px 0 10px;
+  font-size: 19px;
+  line-height: 1.35;
+}
+
+.content h4 {
+  margin: 18px 0 8px;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.content p {
+  margin: 12px 0;
+  font-size: 15px;
+}
+
+.content ul,
+.content ol {
+  margin: 12px 0 16px;
+  padding-left: 24px;
+}
+
+.content li + li {
+  margin-top: 6px;
+}
+
+.content hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 28px 0;
+}
+
+.content blockquote {
+  margin: 18px 0;
+  padding: 14px 18px;
+  border-left: 4px solid var(--accent);
+  background: var(--quote-bg);
+  color: var(--muted);
+}
+
+.content code {
+  background: var(--code-bg);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 0.92em;
+  font-family: "SFMono-Regular", "Menlo", "Monaco", "Courier New", monospace;
+}
+
+.code-block {
+  overflow-x: auto;
+  background: #211f1c;
+  color: #f6efe7;
+  padding: 16px 18px;
+  border-radius: 16px;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0 12px;
+  table-layout: fixed;
+  font-size: 14px;
+}
+
+.content thead th {
+  background: var(--table-head);
+  color: #f8fafc;
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.content tbody td {
+  padding: 10px 12px;
+  border: 1px solid #ddd7cb;
+  vertical-align: top;
+}
+
+.content tbody tr:nth-child(even) td {
+  background: #fcf8f1;
+}
+
+.align-left {
+  text-align: left;
+}
+
+.align-center {
+  text-align: center;
+}
+
+.align-right {
+  text-align: right;
+}
+
+.source-note {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 13px;
+}
+
+.footer {
+  margin-top: 40px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+}
+
+@media (max-width: 980px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    width: calc(100vw - 18px);
+    margin: 10px auto 32px;
+    gap: 12px;
+  }
+
+  .cover,
+  .content {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .content table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .page {
+    width: auto;
+    margin: 0;
+    display: block;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .report {
+    box-shadow: none;
+    border: 0;
+  }
+
+  .cover {
+    page-break-after: always;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="page">
+    <aside class="sidebar">
+      <p class="eyebrow">RQ Report Renderer</p>
+      <h1 class="sidebar-title">行业概览报告</h1>
+      <ul class="meta-list"><li><strong>报告日期</strong> 2026-04-03</li><li><strong>行业</strong> 集成电路</li><li><strong>一句话判断</strong> <code>集成电路</code> 当前呈现“收入修复领先于利润兑现，处于复苏早期”特征，行业整体交易热度偏弱，仍需等待基本面验证。</li><li><strong>样本覆盖</strong> 股票池 109 家，进入主导财报季度 <code>2025q3</code> 比较口径的公司 61 家，覆盖率约 56.0%。</li><li><strong>行业体量</strong> 总市值约为 19910.64亿元，主导季度合计营收 1723.19亿元、净利润 64.10亿元，整体毛利率约为 24.3%。</li><li><strong>景气读数</strong> 营收同比中位数 +15.0%，净利润同比中位数 -4.4%，其中营收正增长公司占比 77.0%，利润正增长公司占比 47.5%。</li><li><strong>质量与估值</strong> ROE 中位数 1.8%，股息率中位数 0.0%，正 PE 样本均值 / 中位数分别为 271.0x / 93.0x。</li><li><strong>交易表现</strong> 近 180 天行业收益中位数 -18.1%，相对基准超额收益 -13.2%，上涨家数占比 21.1%，CR5 约为 48.0%。</li><li><strong>龙头定位</strong> 当前市值龙头为 <strong>海光信息</strong>（688041.XSHG），总市值约 4950.84亿元。</li><li><strong>数据来源</strong> RQData，置信度5*</li><li><strong>当前市值前列公司主要包括</strong> 海光信息（4950.84亿元）、摩尔线程（2594.27亿元）、盛科通信（691.55亿元）、长电科技（688.57亿元）、瑞芯微（628.59亿元）。</li></ul>
+      <nav class="toc">
+<p class="toc-title">Contents</p>
+<ul>
+<li class="level-2"><a href="#执行摘要">执行摘要</a></li>
+<li class="level-2"><a href="#行业定义与样本覆盖">行业定义与样本覆盖</a></li>
+<li class="level-3"><a href="#主导财报季度分布">主导财报季度分布</a></li>
+<li class="level-3"><a href="#行业分类校验">行业分类校验</a></li>
+<li class="level-2"><a href="#行业状态判断">行业状态判断</a></li>
+<li class="level-3"><a href="#关键观察">关键观察</a></li>
+<li class="level-2"><a href="#行业财务与盈利结构">行业财务与盈利结构</a></li>
+<li class="level-3"><a href="#财务结构观察">财务结构观察</a></li>
+<li class="level-2"><a href="#竞争格局与集中度">竞争格局与集中度</a></li>
+<li class="level-3"><a href="#龙头梯队">龙头梯队</a></li>
+<li class="level-3"><a href="#竞争格局观察">竞争格局观察</a></li>
+<li class="level-2"><a href="#估值与股东回报">估值与股东回报</a></li>
+<li class="level-3"><a href="#估值与回报观察">估值与回报观察</a></li>
+<li class="level-2"><a href="#区间表现与相对收益">区间表现与相对收益</a></li>
+<li class="level-3"><a href="#表现观察">表现观察</a></li>
+<li class="level-2"><a href="#投资线索与跟踪指标">投资线索与跟踪指标</a></li>
+<li class="level-3"><a href="#投资线索">投资线索</a></li>
+<li class="level-3"><a href="#分组跟踪">分组跟踪</a></li>
+<li class="level-3"><a href="#跟踪指标清单">跟踪指标清单</a></li>
+<li class="level-2"><a href="#风险提示">风险提示</a></li>
+<li class="level-2"><a href="#附录口径说明">附录：口径说明</a></li>
+</ul>
+</nav>
+    </aside>
+
+    <main class="report">
+      <section class="cover">
+        <p class="cover-kicker">Research Output</p>
+        <h1 class="cover-title">行业概览报告</h1>
+        <p class="cover-subtitle">行业：集成电路</p>
+        <div class="cover-meta"><span class="chip">Report Date 2026-04-03</span><span class="chip">Format Standalone HTML</span><span class="chip">Source RQ Research Markdown</span></div>
+      </section>
+
+      <section class="content">
+<h1 id="行业概览报告">行业概览报告</h1>
+<ul><li>报告日期：2026-04-03</li><li>行业：集成电路</li></ul>
+<h2 id="执行摘要">执行摘要</h2>
+<ul><li>一句话判断：<code>集成电路</code> 当前呈现“收入修复领先于利润兑现，处于复苏早期”特征，行业整体交易热度偏弱，仍需等待基本面验证。</li><li>样本覆盖：股票池 109 家，进入主导财报季度 <code>2025q3</code> 比较口径的公司 61 家，覆盖率约 56.0%。</li><li>行业体量：总市值约为 19910.64亿元，主导季度合计营收 1723.19亿元、净利润 64.10亿元，整体毛利率约为 24.3%。</li><li>景气读数：营收同比中位数 +15.0%，净利润同比中位数 -4.4%，其中营收正增长公司占比 77.0%，利润正增长公司占比 47.5%。</li><li>质量与估值：ROE 中位数 1.8%，股息率中位数 0.0%，正 PE 样本均值 / 中位数分别为 271.0x / 93.0x。</li><li>交易表现：近 180 天行业收益中位数 -18.1%，相对基准超额收益 -13.2%，上涨家数占比 21.1%，CR5 约为 48.0%。</li><li>龙头定位：当前市值龙头为 <strong>海光信息</strong>（688041.XSHG），总市值约 4950.84亿元。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="行业定义与样本覆盖">行业定义与样本覆盖</h2>
+<ul><li>本报告使用 <code>集成电路</code> 作为行业名称；若提供了 <code>sector_definition.json</code>，当前分类来源为 <code>citics_2019</code>，层级为 <code>third</code>。</li><li>股票池总数为 109 家，进入主导季度比较口径的公司为 61 家；未纳入主导季度比较的样本通常是财报期次不同或关键字段缺失。</li><li>当前市值前列公司主要包括：海光信息（4950.84亿元）、摩尔线程（2594.27亿元）、盛科通信（691.55亿元）、长电科技（688.57亿元）、瑞芯微（628.59亿元）。</li><li>当前营收体量前列公司主要包括：长电科技（286.69亿元）、太极实业（225.93亿元）、通富微电（201.16亿元）、纳思达（145.04亿元）、海光信息（94.90亿元）。</li></ul>
+<h3 id="主导财报季度分布">主导财报季度分布</h3>
+<ul><li><code>2025q3</code>：61 家</li><li><code>2025q4</code>：48 家</li></ul>
+<h3 id="行业分类校验">行业分类校验</h3>
+<ul><li>一级行业最常见分类：<code>无数据</code></li><li>二级行业最常见分类：<code>无数据</code></li><li>三级行业最常见分类：<code>无数据</code></li><li>若分类映射为空，通常意味着上游只提供了显式股票池而未附行业层级映射；这不会影响财务和估值统计，但会降低口径复核能力。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="行业状态判断">行业状态判断</h2>
+<ul><li>当前行业状态判断为：<strong>收入修复领先于利润兑现，处于复苏早期</strong>。</li><li>从覆盖样本看，营收正增长公司占比约 77.0%，利润正增长公司占比约 47.5%，说明 <code>集成电路</code> 内部修复并不完全同步。</li><li>市场交易层面呈现：<strong>行业整体交易热度偏弱，仍需等待基本面验证</strong>。近 180 天行业收益中位数 -18.1%，超额收益 -13.2%，上涨广度 21.1%。</li><li>质量层面，ROE 不低于 10% 的公司占比约 1.6%，现金转化率不低于 1x 的公司占比约 63.9%，说明行业内部仍可区分出具备盈利兑现能力的经营主体。</li><li>回报层面，有股息回报记录的公司占比约 45.9%；若行业股息率中位数偏低，通常意味着资金更看重成长兑现而非现金回报。</li><li>背离观察：行业收入增速与利润增速之间存在 19.4% 的差值，这通常意味着成本、费用或产品结构变化仍在影响利润释放节奏。</li></ul>
+<h3 id="关键观察">关键观察</h3>
+<ul><li>营收增速领先公司：摩尔线程（+182.0%）、希荻微（+107.8%）、长光华芯（+67.4%）、臻镭科技（+65.8%）。</li><li>利润修复领先公司：臻镭科技（+579.9%）、格科微（+518.7%）、昂瑞微（+426.7%）、晶华微（+330.9%）。</li><li>ROE 领先公司：瑞芯微（19.6%）、紫光国微（9.8%）、艾为电子（6.8%）、通富微电（5.7%）。</li><li>正 PE 口径下的低估值样本：太极实业（31.4x）、天德钰（35.9x）、紫光国微（39.1x）、睿创微纳（42.8x）。</li><li>若后续行业出现“营收正增长占比抬升、利润正增长占比同步抬升、上涨广度扩散”三项共振，通常意味着行业状态从结构性修复转向更广泛的景气改善。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="行业财务与盈利结构">行业财务与盈利结构</h2>
+<ul><li>主导比较口径为 <code>2025q3</code> 对比 <code>2024q3</code>。</li><li>行业营收同比中位数约为 +15.0%，净利润同比中位数约为 -4.4%。</li><li>行业整体毛利率约为 24.3%，资产负债率中位数约为 18.2%，现金转化率中位数约为 6.22x。</li><li>当前亏损样本数量约为 22 家，反映行业内部仍存在尚未越过盈亏平衡点的公司。</li></ul>
+<table><thead><tr><th class="align-left">公司</th><th class="align-left">营收</th><th class="align-left">营收同比</th><th class="align-left">净利润</th><th class="align-left">净利润同比</th><th class="align-left">毛利率</th><th class="align-left">现金转化率</th></tr></thead><tbody><tr><td class="align-left">长电科技<br><code>600584.XSHG</code></td><td class="align-left">286.69亿元</td><td class="align-left">+14.8%</td><td class="align-left">9.51亿元</td><td class="align-left">-11.2%</td><td class="align-left">13.7%</td><td class="align-left">32.64x</td></tr><tr><td class="align-left">太极实业<br><code>600667.XSHG</code></td><td class="align-left">225.93亿元</td><td class="align-left">-8.1%</td><td class="align-left">5.38亿元</td><td class="align-left">-9.9%</td><td class="align-left">8.0%</td><td class="align-left">37.80x</td></tr><tr><td class="align-left">通富微电<br><code>002156.XSHE</code></td><td class="align-left">201.16亿元</td><td class="align-left">+17.8%</td><td class="align-left">9.94亿元</td><td class="align-left">+59.1%</td><td class="align-left">15.3%</td><td class="align-left">22.29x</td></tr><tr><td class="align-left">纳思达<br><code>002180.XSHE</code></td><td class="align-left">145.04亿元</td><td class="align-left">-25.2%</td><td class="align-left">-3.67亿元</td><td class="align-left">-127.9%</td><td class="align-left">30.0%</td><td class="align-left">-41.96x</td></tr><tr><td class="align-left">海光信息<br><code>688041.XSHG</code></td><td class="align-left">94.90亿元</td><td class="align-left">+54.6%</td><td class="align-left">28.41亿元</td><td class="align-left">+34.8%</td><td class="align-left">60.1%</td><td class="align-left">4.38x</td></tr><tr><td class="align-left">华润微<br><code>688396.XSHG</code></td><td class="align-left">80.69亿元</td><td class="align-left">+8.0%</td><td class="align-left">4.44亿元</td><td class="align-left">+9.2%</td><td class="align-left">26.4%</td><td class="align-left">15.34x</td></tr><tr><td class="align-left">格科微<br><code>688728.XSHG</code></td><td class="align-left">57.23亿元</td><td class="align-left">+25.7%</td><td class="align-left">0.50亿元</td><td class="align-left">+518.7%</td><td class="align-left">20.7%</td><td class="align-left">133.37x</td></tr><tr><td class="align-left">芯联集成<br><code>688469.XSHG</code></td><td class="align-left">54.22亿元</td><td class="align-left">+19.2%</td><td class="align-left">-15.76亿元</td><td class="align-left">-4.4%</td><td class="align-left">4.0%</td><td class="align-left">-4.16x</td></tr><tr><td class="align-left">紫光国微<br><code>002049.XSHE</code></td><td class="align-left">49.04亿元</td><td class="align-left">+15.0%</td><td class="align-left">12.62亿元</td><td class="align-left">+24.2%</td><td class="align-left">56.6%</td><td class="align-left">3.34x</td></tr><tr><td class="align-left">睿创微纳<br><code>688002.XSHG</code></td><td class="align-left">40.86亿元</td><td class="align-left">+29.7%</td><td class="align-left">6.19亿元</td><td class="align-left">+60.4%</td><td class="align-left">52.0%</td><td class="align-left">7.43x</td></tr></tbody></table>
+<h3 id="财务结构观察">财务结构观察</h3>
+<ul><li>营收增速领先样本：摩尔线程（+182.0%）、希荻微（+107.8%）、长光华芯（+67.4%）、臻镭科技（+65.8%）、海光信息（+54.6%）。</li><li>利润增速领先样本：臻镭科技（+579.9%）、格科微（+518.7%）、昂瑞微（+426.7%）、晶华微（+330.9%）、安凯微（+267.5%）。</li><li>毛利率领先样本：臻镭科技（82.3%）、成都华微（71.3%）、摩尔线程（61.9%）、海光信息（60.1%）、紫光国微（56.6%）。</li><li>如果营收同比改善而利润同比未同步，通常意味着产品价格、折旧摊销、研发投放或渠道费用仍在压制利润释放。</li><li>如果现金转化率显著高于 1x，说明当前利润兑现质量较好；但若极端偏高，也要结合一次性回款或营运资本波动理解。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="竞争格局与集中度">竞争格局与集中度</h2>
+<ul><li>行业总市值约为 19910.64亿元，CR3 / CR5 / CR10 分别约为 41.4% / 48.0% / 62.1%。</li><li>ROE 中位数为 1.8%；市值龙头未必是盈利质量最优，需要结合 ROE 和利润兑现能力交叉判断。</li></ul>
+<table><thead><tr><th class="align-left">公司</th><th class="align-left">市值</th><th class="align-left">ROE</th><th class="align-left">营收</th><th class="align-left">净利润</th><th class="align-left">PE</th><th class="align-left">PB</th></tr></thead><tbody><tr><td class="align-left">海光信息<br><code>688041.XSHG</code></td><td class="align-left">4950.84亿元</td><td class="align-left">无数据</td><td class="align-left">94.90亿元</td><td class="align-left">28.41亿元</td><td class="align-left">194.7x</td><td class="align-left">22.61x</td></tr><tr><td class="align-left">摩尔线程<br><code>688795.XSHG</code></td><td class="align-left">2594.27亿元</td><td class="align-left">无数据</td><td class="align-left">7.85亿元</td><td class="align-left">-7.24亿元</td><td class="align-left">-253.3x</td><td class="align-left">65.88x</td></tr><tr><td class="align-left">盛科通信<br><code>688702.XSHG</code></td><td class="align-left">691.55亿元</td><td class="align-left">无数据</td><td class="align-left">8.32亿元</td><td class="align-left">0.09亿元</td><td class="align-left">-461.5x</td><td class="align-left">29.11x</td></tr><tr><td class="align-left">长电科技<br><code>600584.XSHG</code></td><td class="align-left">688.57亿元</td><td class="align-left">3.4%</td><td class="align-left">286.69亿元</td><td class="align-left">9.51亿元</td><td class="align-left">46.3x</td><td class="align-left">2.44x</td></tr><tr><td class="align-left">瑞芯微<br><code>603893.XSHG</code></td><td class="align-left">628.59亿元</td><td class="align-left">19.6%</td><td class="align-left">31.41亿元</td><td class="align-left">7.80亿元</td><td class="align-left">61.5x</td><td class="align-left">14.83x</td></tr><tr><td class="align-left">通富微电<br><code>002156.XSHE</code></td><td class="align-left">618.72亿元</td><td class="align-left">5.7%</td><td class="align-left">201.16亿元</td><td class="align-left">9.94亿元</td><td class="align-left">62.8x</td><td class="align-left">4.08x</td></tr><tr><td class="align-left">华润微<br><code>688396.XSHG</code></td><td class="align-left">590.12亿元</td><td class="align-left">无数据</td><td class="align-left">80.69亿元</td><td class="align-left">4.44亿元</td><td class="align-left">89.2x</td><td class="align-left">2.58x</td></tr><tr><td class="align-left">紫光国微<br><code>002049.XSHE</code></td><td class="align-left">559.91亿元</td><td class="align-left">9.8%</td><td class="align-left">49.04亿元</td><td class="align-left">12.62亿元</td><td class="align-left">39.1x</td><td class="align-left">4.27x</td></tr><tr><td class="align-left">芯联集成<br><code>688469.XSHG</code></td><td class="align-left">531.46亿元</td><td class="align-left">无数据</td><td class="align-left">54.22亿元</td><td class="align-left">-15.76亿元</td><td class="align-left">-92.5x</td><td class="align-left">4.02x</td></tr><tr><td class="align-left">龙芯中科<br><code>688047.XSHG</code></td><td class="align-left">514.72亿元</td><td class="align-left">无数据</td><td class="align-left">3.51亿元</td><td class="align-left">-3.94亿元</td><td class="align-left">-113.5x</td><td class="align-left">20.14x</td></tr></tbody></table>
+<h3 id="龙头梯队">龙头梯队</h3>
+<ul><li>第一梯队（市值前三）：海光信息（4950.84亿元）、摩尔线程（2594.27亿元）、盛科通信（691.55亿元）。</li><li>第二梯队（市值第 4-8 名）：长电科技（688.57亿元）、瑞芯微（628.59亿元）、通富微电（618.72亿元）、华润微（590.12亿元）、紫光国微（559.91亿元）。</li><li>利润修复较快、可能提升行业话语权的挑战者：海光信息（+34.8%）、瑞芯微（+121.7%）、通富微电（+59.1%）、紫光国微（+24.2%）、睿创微纳（+60.4%）。</li></ul>
+<h3 id="竞争格局观察">竞争格局观察</h3>
+<ul><li>高集中度行业通常意味着龙头在品牌、渠道或成本端占优，但也意味着估值会更快反映市场共识。</li><li>若 CR5 很高而二线公司仍能保持正的利润同比，通常说明行业景气在龙头之外也有扩散。</li><li>若龙头市值集中但利润修复并未同步集中，往往意味着资金先交易确定性，再等待基本面向二线扩散。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="估值与股东回报">估值与股东回报</h2>
+<ul><li>行业 PE 中位数约为 93.0x，PB 中位数约为 4.28x，股息率中位数约为 0.0%。</li><li>正 PE 样本均值约为 271.0x，说明行业估值分布可能存在被少数高估值公司拉宽的现象。</li></ul>
+<table><thead><tr><th class="align-left">公司</th><th class="align-left">PE</th><th class="align-left">PB</th><th class="align-left">股息率</th><th class="align-left">ROE</th><th class="align-left">净利润同比</th></tr></thead><tbody><tr><td class="align-left">太极实业<br><code>600667.XSHG</code></td><td class="align-left">31.4x</td><td class="align-left">2.13x</td><td class="align-left">1.1%</td><td class="align-left">5.1%</td><td class="align-left">-9.9%</td></tr><tr><td class="align-left">天德钰<br><code>688252.XSHG</code></td><td class="align-left">35.9x</td><td class="align-left">3.56x</td><td class="align-left">0.0%</td><td class="align-left">无数据</td><td class="align-left">+1.7%</td></tr><tr><td class="align-left">紫光国微<br><code>002049.XSHE</code></td><td class="align-left">39.1x</td><td class="align-left">4.27x</td><td class="align-left">0.3%</td><td class="align-left">9.8%</td><td class="align-left">+24.2%</td></tr><tr><td class="align-left">睿创微纳<br><code>688002.XSHG</code></td><td class="align-left">42.8x</td><td class="align-left">7.84x</td><td class="align-left">0.0%</td><td class="align-left">无数据</td><td class="align-left">+60.4%</td></tr><tr><td class="align-left">龙迅股份<br><code>688486.XSHG</code></td><td class="align-left">44.5x</td><td class="align-left">5.06x</td><td class="align-left">0.0%</td><td class="align-left">无数据</td><td class="align-left">+32.5%</td></tr><tr><td class="align-left">长电科技<br><code>600584.XSHG</code></td><td class="align-left">46.3x</td><td class="align-left">2.44x</td><td class="align-left">0.4%</td><td class="align-left">3.4%</td><td class="align-left">-11.2%</td></tr><tr><td class="align-left">英集芯<br><code>688209.XSHG</code></td><td class="align-left">47.8x</td><td class="align-left">4.07x</td><td class="align-left">0.0%</td><td class="align-left">无数据</td><td class="align-left">+26.8%</td></tr><tr><td class="align-left">艾为电子<br><code>688798.XSHG</code></td><td class="align-left">48.0x</td><td class="align-left">3.64x</td><td class="align-left">0.0%</td><td class="align-left">6.8%</td><td class="align-left">+55.0%</td></tr><tr><td class="align-left">创耀科技<br><code>688259.XSHG</code></td><td class="align-left">48.9x</td><td class="align-left">2.46x</td><td class="align-left">0.0%</td><td class="align-left">无数据</td><td class="align-left">+46.6%</td></tr><tr><td class="align-left">颀中科技<br><code>688352.XSHG</code></td><td class="align-left">53.5x</td><td class="align-left">2.36x</td><td class="align-left">0.0%</td><td class="align-left">无数据</td><td class="align-left">-19.2%</td></tr><tr><td class="align-left">斯达半导<br><code>603290.XSHG</code></td><td class="align-left">57.5x</td><td class="align-left">3.37x</td><td class="align-left">0.7%</td><td class="align-left">5.6%</td><td class="align-left">-9.7%</td></tr><tr><td class="align-left">南芯科技<br><code>688484.XSHG</code></td><td class="align-left">61.4x</td><td class="align-left">3.58x</td><td class="align-left">0.0%</td><td class="align-left">无数据</td><td class="align-left">-30.7%</td></tr></tbody></table>
+<h3 id="估值与回报观察">估值与回报观察</h3>
+<ul><li>低估值样本（正 PE 由低到高）：太极实业（31.4x）、天德钰（35.9x）、紫光国微（39.1x）、睿创微纳（42.8x）、龙迅股份（44.5x）。</li><li>高股息样本：太极实业（1.1%）、斯达半导（0.7%）、瑞芯微（0.6%）、长电科技（0.4%）、紫光国微（0.3%）。</li><li>高估值或亏损样本：大港股份（204.1x）、纳思达（-33.7x）、航宇微（-37.4x）、富满微（-36.2x）、国科微（987.3x）。</li><li>低估值且高 ROE 的公司更容易成为行业中的性价比候选，但若利润同比转负，估值折价也可能有基本面原因。</li><li>高股息率在成熟行业中有参考价值，但仍需结合现金转化率确认分红可持续性。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="区间表现与相对收益">区间表现与相对收益</h2>
+<ul><li>行业成分股区间收益中位数约为 -18.1%，基准指数收益约为 -4.9%，行业超额收益约为 -13.2%。</li><li>上涨家数占比约为 21.1%；收益广度能帮助判断行业行情是龙头驱动还是全面扩散。</li></ul>
+<table><thead><tr><th class="align-left">公司</th><th class="align-left">区间收益</th><th class="align-left">ROE</th><th class="align-left">PE</th><th class="align-left">净利润同比</th><th class="align-left">股息率</th></tr></thead><tbody><tr><td class="align-left">长光华芯<br><code>688048.XSHG</code></td><td class="align-left">+187.4%</td><td class="align-left">无数据</td><td class="align-left">1955.3x</td><td class="align-left">-135.4%</td><td class="align-left">0.0%</td></tr><tr><td class="align-left">臻镭科技<br><code>688270.XSHG</code></td><td class="align-left">+105.9%</td><td class="align-left">无数据</td><td class="align-left">225.0x</td><td class="align-left">+579.9%</td><td class="align-left">0.0%</td></tr><tr><td class="align-left">国科微<br><code>300672.XSHE</code></td><td class="align-left">+62.7%</td><td class="align-left">0.2%</td><td class="align-left">987.3x</td><td class="align-left">-89.2%</td><td class="align-left">0.2%</td></tr><tr><td class="align-left">伟测科技<br><code>688372.XSHG</code></td><td class="align-left">+47.1%</td><td class="align-left">无数据</td><td class="align-left">72.4x</td><td class="align-left">+226.4%</td><td class="align-left">0.0%</td></tr><tr><td class="align-left">盛科通信<br><code>688702.XSHG</code></td><td class="align-left">+33.3%</td><td class="align-left">无数据</td><td class="align-left">-461.5x</td><td class="align-left">-112.3%</td><td class="align-left">0.0%</td></tr><tr><td class="align-left">新相微<br><code>688593.XSHG</code></td><td class="align-left">+31.2%</td><td class="align-left">无数据</td><td class="align-left">1479.4x</td><td class="align-left">+93.6%</td><td class="align-left">0.0%</td></tr><tr><td class="align-left">恒烁股份<br><code>688416.XSHG</code></td><td class="align-left">+20.0%</td><td class="align-left">无数据</td><td class="align-left">-59.3x</td><td class="align-left">-8.8%</td><td class="align-left">0.0%</td></tr><tr><td class="align-left">力芯微<br><code>688601.XSHG</code></td><td class="align-left">+19.8%</td><td class="align-left">无数据</td><td class="align-left">196.9x</td><td class="align-left">-75.4%</td><td class="align-left">0.0%</td></tr><tr><td class="align-left">航宇微<br><code>300053.XSHE</code></td><td class="align-left">+17.0%</td><td class="align-left">-4.2%</td><td class="align-left">-37.4x</td><td class="align-left">+18.3%</td><td class="align-left">无数据</td></tr><tr><td class="align-left">睿创微纳<br><code>688002.XSHG</code></td><td class="align-left">+16.1%</td><td class="align-left">无数据</td><td class="align-left">42.8x</td><td class="align-left">+60.4%</td><td class="align-left">0.0%</td></tr><tr><td class="align-left">电科芯片<br><code>600877.XSHG</code></td><td class="align-left">+7.1%</td><td class="align-left">0.4%</td><td class="align-left">950.6x</td><td class="align-left">-83.2%</td><td class="align-left">无数据</td></tr><tr><td class="align-left">明微电子<br><code>688699.XSHG</code></td><td class="align-left">+7.0%</td><td class="align-left">无数据</td><td class="align-left">-100.0x</td><td class="align-left">-577.5%</td><td class="align-left">0.0%</td></tr></tbody></table>
+<h3 id="表现观察">表现观察</h3>
+<ul><li>区间涨幅靠前样本：长光华芯（+187.4%）、臻镭科技（+105.9%）、国科微（+62.7%）、伟测科技（+47.1%）、盛科通信（+33.3%）。</li><li>区间回撤较大样本：泰凌微（-44.4%）、昂瑞微（-40.7%）、敏芯股份（-39.5%）、润欣科技（-37.2%）、南芯科技（-34.2%）。</li><li>如果行业收益显著跑赢基准，但上涨广度有限，通常说明资金集中在少数龙头。</li><li>如果收益中位数和上涨广度都不错，说明行业贝塔与个股阿尔法都在改善。</li><li>如果股价表现明显领先而利润同比尚未兑现，往往意味着市场交易的是预期改善而不是当期盈利。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="投资线索与跟踪指标">投资线索与跟踪指标</h2>
+<ul><li>核心筛选规则：PE 不高于行业中位数、ROE 不低于行业中位数、净利润同比为正、股息率不低于行业中位数；满足 4 项中的至少 3 项进入优先观察名单。</li></ul>
+<table><thead><tr><th class="align-left">公司</th><th class="align-left">得分</th><th class="align-left">PE</th><th class="align-left">ROE</th><th class="align-left">净利润同比</th><th class="align-left">股息率</th><th class="align-left">区间收益</th></tr></thead><tbody><tr><td class="align-left">瑞芯微<br><code>603893.XSHG</code></td><td class="align-left">4</td><td class="align-left">61.5x</td><td class="align-left">19.6%</td><td class="align-left">+121.7%</td><td class="align-left">0.6%</td><td class="align-left">-32.8%</td></tr><tr><td class="align-left">紫光国微<br><code>002049.XSHE</code></td><td class="align-left">4</td><td class="align-left">39.1x</td><td class="align-left">9.8%</td><td class="align-left">+24.2%</td><td class="align-left">0.3%</td><td class="align-left">-29.0%</td></tr><tr><td class="align-left">艾为电子<br><code>688798.XSHG</code></td><td class="align-left">4</td><td class="align-left">48.0x</td><td class="align-left">6.8%</td><td class="align-left">+55.0%</td><td class="align-left">0.0%</td><td class="align-left">-29.1%</td></tr><tr><td class="align-left">通富微电<br><code>002156.XSHE</code></td><td class="align-left">4</td><td class="align-left">62.8x</td><td class="align-left">5.7%</td><td class="align-left">+59.1%</td><td class="align-left">0.1%</td><td class="align-left">-7.7%</td></tr><tr><td class="align-left">斯达半导<br><code>603290.XSHG</code></td><td class="align-left">3</td><td class="align-left">57.5x</td><td class="align-left">5.6%</td><td class="align-left">-9.7%</td><td class="align-left">0.7%</td><td class="align-left">-16.0%</td></tr><tr><td class="align-left">太极实业<br><code>600667.XSHG</code></td><td class="align-left">3</td><td class="align-left">31.4x</td><td class="align-left">5.1%</td><td class="align-left">-9.9%</td><td class="align-left">1.1%</td><td class="align-left">-1.7%</td></tr><tr><td class="align-left">润欣科技<br><code>300493.XSHE</code></td><td class="align-left">3</td><td class="align-left">168.0x</td><td class="align-left">4.1%</td><td class="align-left">+25.5%</td><td class="align-left">0.2%</td><td class="align-left">-37.2%</td></tr><tr><td class="align-left">长电科技<br><code>600584.XSHG</code></td><td class="align-left">3</td><td class="align-left">46.3x</td><td class="align-left">3.4%</td><td class="align-left">-11.2%</td><td class="align-left">0.4%</td><td class="align-left">-18.1%</td></tr><tr><td class="align-left">钜泉科技<br><code>688391.XSHG</code></td><td class="align-left">3</td><td class="align-left">78.4x</td><td class="align-left">2.4%</td><td class="align-left">-37.7%</td><td class="align-left">0.0%</td><td class="align-left">-12.6%</td></tr><tr><td class="align-left">天德钰<br><code>688252.XSHG</code></td><td class="align-left">3</td><td class="align-left">35.9x</td><td class="align-left">无数据</td><td class="align-left">+1.7%</td><td class="align-left">0.0%</td><td class="align-left">-29.5%</td></tr></tbody></table>
+<h3 id="投资线索">投资线索</h3>
+<ul><li><strong>瑞芯微（603893.XSHG）</strong>：满足 4 项条件，PE 61.5x、ROE 19.6%、净利润同比 +121.7%、股息率 0.6%。</li><li><strong>紫光国微（002049.XSHE）</strong>：满足 4 项条件，PE 39.1x、ROE 9.8%、净利润同比 +24.2%、股息率 0.3%。</li><li><strong>艾为电子（688798.XSHG）</strong>：满足 4 项条件，PE 48.0x、ROE 6.8%、净利润同比 +55.0%、股息率 0.0%。</li><li><strong>通富微电（002156.XSHE）</strong>：满足 4 项条件，PE 62.8x、ROE 5.7%、净利润同比 +59.1%、股息率 0.1%。</li><li><strong>斯达半导（603290.XSHG）</strong>：满足 3 项条件，PE 57.5x、ROE 5.6%、净利润同比 -9.7%、股息率 0.7%。</li><li><strong>太极实业（600667.XSHG）</strong>：满足 3 项条件，PE 31.4x、ROE 5.1%、净利润同比 -9.9%、股息率 1.1%。</li></ul>
+<h3 id="分组跟踪">分组跟踪</h3>
+<ul><li>防御型配置线索：瑞芯微（0.6%）、紫光国微（0.3%）、艾为电子（0.0%）、通富微电（0.1%）、斯达半导（0.7%）。</li><li>盈利修复但股价尚未充分反映的样本：格科微（+518.7%）、昂瑞微（+426.7%）、安凯微（+267.5%）、瑞芯微（+121.7%）、泰凌微（+117.3%）。</li><li>景气与股价共振样本：臻镭科技（+105.9%）、伟测科技（+47.1%）、新相微（+31.2%）、航宇微（+17.0%）、睿创微纳（+16.1%）。</li><li>后续跟踪建议优先围绕三类变量展开：利润增速能否延续、ROE 是否稳定高于行业中位数、估值是否在盈利兑现后仍具备吸引力。</li></ul>
+<h3 id="跟踪指标清单">跟踪指标清单</h3>
+<ul><li>基本面指标：营收同比中位数 +15.0%、净利润同比中位数 -4.4%、ROE 中位数 1.8%。</li><li>交易指标：区间收益中位数 -18.1%、超额收益 -13.2%、上涨广度 21.1%。</li><li>估值指标：PE 中位数 93.0x、PB 中位数 4.28x、股息率中位数 0.0%。</li><li>当基本面改善先于交易指标时，更适合等待验证；当交易指标先于基本面改善时，则要警惕预期交易过满后的回撤压力。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="风险提示">风险提示</h2>
+<ul><li><strong>样本覆盖风险</strong>：股票池 109 家中仅有 61 家进入主导季度比较口径，行业结论仍有覆盖缺口。</li><li><strong>盈利承压风险</strong>：净利润同比中位数约为 -4.4%，说明行业盈利趋势尚未普遍改善。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="附录口径说明">附录：口径说明</h2>
+<ul><li>报告日期为 2026-04-03，行业名称为 <code>集成电路</code>。</li><li>行业样本来自显式股票池，股票池规模 109 家，进入主导季度比较口径 61 家。</li><li>主导财报季度为 <code>2025q3</code>，同比比较季度为 <code>2024q3</code>；行业同比结论基于该口径计算。</li><li>若提供 <code>sector_definition.json</code>，其行业来源为 <code>citics_2019</code>，行业层级为 <code>third</code>。</li><li>估值和价格指标应使用最近非空因子日；若最近交易日返回空值，需要向前回溯至可用日期。</li><li><code>dividend_yield.json</code> 原始单位为 bps，报告展示时已换算为百分比。</li><li>本报告旨在提供行业横向比较和跟踪框架，不替代针对单一公司的深度尽调。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+        <div class="footer">Generated by report-renderer/scripts/render_report.py</div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
