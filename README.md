@@ -73,3 +73,35 @@ RQData 数据 API 使用指南。支持 A 股、港股、期货、期权、指�
 ## 示例输出
 
 `research-example/` 目录包含各 research skill 的示例输出文件，可供参考。
+
+---
+
+## Ricequant MCP Server
+
+Ricequant SDK 现已支持 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)，允许 AI 助手（如 Claude、Cursor 等）直接调用 Ricequant 的金融数据能力。
+
+### 快速开始
+
+1. **安装依赖**：
+   ```bash
+   uv pip install fastmcp
+   ```
+
+2. **运行服务器**：
+   ```bash
+   uv run python mcp_server.py
+   ```
+
+### 已实现功能 (Phase 1)
+
+目前 MCP Server 提供了以下核心数据查询工具：
+
+| 工具 | 说明 |
+|---|---|
+| `all_instruments` | 获取所有合约的基础信息（股票、期货、指数等） |
+| `get_price` | 获取历史行情数据（OHLCV），支持日线、分钟线、Tick 等频率 |
+| `get_quota` | 查看当前账户流量配额和许可证有效期 |
+| `info` | 获取 rqdatac 版本及服务器连接状态 |
+
+**前置要求**：需正确安装 `rqsdk` 并完成许可证配置（同 `rqdata-python` 技能）。
+
