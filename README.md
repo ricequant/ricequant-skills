@@ -78,30 +78,57 @@ RQData 数据 API 使用指南。支持 A 股、港股、期货、期权、指�
 
 ## Ricequant MCP Server
 
-Ricequant SDK 现已支持 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)，允许 AI 助手（如 Claude、Cursor 等）直接调用 Ricequant 的金融数据能力。
+Ricequant SDK 现已支持 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)，允许 AI 助手（如 Claude Desktop、Cursor、Zed 等）通过标准化接口直接获取金融数据。
 
-### 快速开始
+### 1. 安装与配置
 
-1. **安装依赖**：
-   ```bash
-   uv pip install fastmcp
-   ```
+```bash
+# 安装依赖
+uv pip install -r requirements.txt
 
-2. **运行服务器**：
-   ```bash
-   uv run python mcp_server.py
-   ```
+# 配置许可证 (二选一)
+# 1. 环境变量
+export RQDATA_USERNAME=your_username
+export RQDATA_PASSWORD=your_password
+# 2. 或在代码运行前确保已执行过 rqdatac.init() 进行本地授权
+```
 
-### 已实现功能 (Phase 1)
+### 2. 在 AI 客户端中配置
 
-目前 MCP Server 提供了以下核心数据查询工具：
+#### **Cursor**
+在 `Settings -> Models -> MCP` 中添加新服务器：
+- **Name**: Ricequant
+- **Type**: `command`
+- **Command**: `uv --directory /path/to/ricequant-skills run python mcp_server.py`
 
-| 工具 | 说明 |
+#### **Claude Desktop**
+在配置文件（如 `~/.config/Claude/claude_desktop_config.json`）中添加：
+```json
+{
+  "mcpServers": {
+    "ricequant": {
+      "command": "uv",
+      "args": ["--directory", "/path/to/ricequant-skills", "run", "python", "mcp_server.py"]
+    }
+  }
+}
+```
+
+### 3. 已实现工具列表
+
+| 工具名称 | 功能描述 |
 |---|---|
-| `all_instruments` | 获取所有合约的基础信息（股票、期货、指数等） |
-| `get_price` | 获取历史行情数据（OHLCV），支持日线、分钟线、Tick 等频率 |
+| `all_instruments` | 获取所有合约（股票、期货、指数等）的基础信息 |
+| `get_price` | 获取历史行情数据（OHLCV），支持多频率与前/后复权 |
+| `get_trading_dates` | 查询特定市场和日期范围内的交易日列表 |
+| `index_components` | 获取指数权重股及成分股变动历史 |
+| `get_factor` | 获取股票因子数据（如 PE, PB, MACD 等） |
+| `get_pit_financials_ex` | 获取 Point-In-Time 季度财报数据（支持营收、利润等字段） |
 | `get_quota` | 查看当前账户流量配额和许可证有效期 |
-| `info` | 获取 rqdatac 版本及服务器连接状态 |
+| `info` | 获取 SDK 版本及连接状态 |
 
-**前置要求**：需正确安装 `rqsdk` 并完成许可证配置（同 `rqdata-python` 技能）。
+---
+
+## 示例输出
+`research-example/` 目录包含各 research skill 生成的专业研报示例。
 
