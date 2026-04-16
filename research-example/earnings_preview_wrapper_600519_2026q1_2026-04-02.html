@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>财报预览报告</title>
+  <style>
+:root {
+  --paper: #fbf8f1;
+  --surface: #fffdf8;
+  --ink: #1d2430;
+  --muted: #5e6875;
+  --line: #d7d4ca;
+  --accent: #a6482f;
+  --accent-deep: #6b2f21;
+  --accent-soft: #efe2d7;
+  --table-head: #293241;
+  --code-bg: #f3efe8;
+  --quote-bg: #f5ede4;
+  --shadow: 0 24px 80px rgba(24, 31, 42, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(166, 72, 47, 0.10), transparent 32%),
+    linear-gradient(180deg, #f3ecdf 0%, var(--paper) 18%, #f7f4ee 100%);
+  color: var(--ink);
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
+  line-height: 1.75;
+}
+
+a {
+  color: inherit;
+}
+
+.page {
+  width: min(1200px, calc(100vw - 32px));
+  margin: 24px auto 64px;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 24px;
+}
+
+.sidebar {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  background: rgba(255, 253, 248, 0.94);
+  border: 1px solid rgba(107, 47, 33, 0.10);
+  border-radius: 20px;
+  padding: 24px 22px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.eyebrow {
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.sidebar-title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.25;
+}
+
+.meta-list {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.meta-list li + li {
+  margin-top: 8px;
+}
+
+.toc {
+  margin-top: 24px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+
+.toc-title {
+  margin: 0 0 10px;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.toc li + li {
+  margin-top: 8px;
+}
+
+.toc a {
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+
+.toc a:hover {
+  background: var(--accent-soft);
+  transform: translateX(2px);
+}
+
+.toc .level-3 a,
+.toc .level-4 a {
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.report {
+  background: var(--surface);
+  border: 1px solid rgba(41, 50, 65, 0.08);
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.cover {
+  padding: 56px 56px 44px;
+  background:
+    linear-gradient(135deg, rgba(166, 72, 47, 0.96), rgba(76, 33, 24, 0.95)),
+    linear-gradient(180deg, #784032 0%, #3d1e17 100%);
+  color: #fffaf3;
+}
+
+.cover-kicker {
+  margin: 0 0 10px;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.cover-title {
+  margin: 0;
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1.18;
+}
+
+.cover-subtitle {
+  margin: 16px 0 0;
+  font-size: 17px;
+  line-height: 1.6;
+  max-width: 56ch;
+  opacity: 0.92;
+}
+
+.cover-meta {
+  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+}
+
+.chip {
+  border: 1px solid rgba(255, 250, 243, 0.24);
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: rgba(255, 250, 243, 0.08);
+}
+
+.content {
+  padding: 40px 56px 56px;
+}
+
+.content h1,
+.content h2,
+.content h3,
+.content h4 {
+  scroll-margin-top: 24px;
+}
+
+.content h1 {
+  margin: 32px 0 16px;
+  font-size: 30px;
+  line-height: 1.28;
+  color: var(--accent-deep);
+}
+
+.content h2 {
+  margin: 36px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(166, 72, 47, 0.22);
+  font-size: 24px;
+  line-height: 1.3;
+  color: var(--accent-deep);
+}
+
+.content h3 {
+  margin: 26px 0 10px;
+  font-size: 19px;
+  line-height: 1.35;
+}
+
+.content h4 {
+  margin: 18px 0 8px;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.content p {
+  margin: 12px 0;
+  font-size: 15px;
+}
+
+.content ul,
+.content ol {
+  margin: 12px 0 16px;
+  padding-left: 24px;
+}
+
+.content li + li {
+  margin-top: 6px;
+}
+
+.content hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 28px 0;
+}
+
+.content blockquote {
+  margin: 18px 0;
+  padding: 14px 18px;
+  border-left: 4px solid var(--accent);
+  background: var(--quote-bg);
+  color: var(--muted);
+}
+
+.content code {
+  background: var(--code-bg);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 0.92em;
+  font-family: "SFMono-Regular", "Menlo", "Monaco", "Courier New", monospace;
+}
+
+.code-block {
+  overflow-x: auto;
+  background: #211f1c;
+  color: #f6efe7;
+  padding: 16px 18px;
+  border-radius: 16px;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0 12px;
+  table-layout: fixed;
+  font-size: 14px;
+}
+
+.content thead th {
+  background: var(--table-head);
+  color: #f8fafc;
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.content tbody td {
+  padding: 10px 12px;
+  border: 1px solid #ddd7cb;
+  vertical-align: top;
+}
+
+.content tbody tr:nth-child(even) td {
+  background: #fcf8f1;
+}
+
+.align-left {
+  text-align: left;
+}
+
+.align-center {
+  text-align: center;
+}
+
+.align-right {
+  text-align: right;
+}
+
+.source-note {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 13px;
+}
+
+.footer {
+  margin-top: 40px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+}
+
+@media (max-width: 980px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    width: calc(100vw - 18px);
+    margin: 10px auto 32px;
+    gap: 12px;
+  }
+
+  .cover,
+  .content {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .content table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .page {
+    width: auto;
+    margin: 0;
+    display: block;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .report {
+    box-shadow: none;
+    border: 0;
+  }
+
+  .cover {
+    page-break-after: always;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="page">
+    <aside class="sidebar">
+      <p class="eyebrow">RQ Report Renderer</p>
+      <h1 class="sidebar-title">财报预览报告</h1>
+      <ul class="meta-list"><li><strong>报告日期</strong> 2026-04-02</li><li><strong>公司</strong> 贵州茅台（<code>600519.XSHG</code>）</li><li><strong>目标季度</strong> <code>2026q1</code></li><li><strong>数据来源</strong> RQData，置信度5*</li></ul>
+      <nav class="toc">
+<p class="toc-title">Contents</p>
+<ul>
+<li class="level-2"><a href="#执行摘要">执行摘要</a></li>
+<li class="level-2"><a href="#历史经营与财务趋势">历史经营与财务趋势</a></li>
+<li class="level-3"><a href="#历史观察要点">历史观察要点</a></li>
+<li class="level-2"><a href="#预览季度预测框架">预览季度预测框架</a></li>
+<li class="level-3"><a href="#本次财报最值得验证的三个点">本次财报最值得验证的三个点</a></li>
+<li class="level-2"><a href="#卖方预期与市场定价">卖方预期与市场定价</a></li>
+<li class="level-3"><a href="#近期研报样本">近期研报样本</a></li>
+<li class="level-3"><a href="#可比公司校准">可比公司校准</a></li>
+<li class="level-2"><a href="#情景分析与市场反应">情景分析与市场反应</a></li>
+<li class="level-2"><a href="#财报前交易定位">财报前交易定位</a></li>
+<li class="level-2"><a href="#关键风险与验证点">关键风险与验证点</a></li>
+<li class="level-2"><a href="#附录生成说明">附录：生成说明</a></li>
+<li class="level-3"><a href="#输入文件加载情况">输入文件加载情况</a></li>
+</ul>
+</nav>
+    </aside>
+
+    <main class="report">
+      <section class="cover">
+        <p class="cover-kicker">Research Output</p>
+        <h1 class="cover-title">财报预览报告</h1>
+        <p class="cover-subtitle">公司：贵州茅台（<code>600519.XSHG</code>）</p>
+        <div class="cover-meta"><span class="chip">Report Date 2026-04-02</span><span class="chip">Format Standalone HTML</span><span class="chip">Source RQ Research Markdown</span></div>
+      </section>
+
+      <section class="content">
+<h1 id="财报预览报告">财报预览报告</h1>
+<ul><li>报告日期：2026-04-02</li><li>公司：贵州茅台（<code>600519.XSHG</code>）</li><li>目标季度：<code>2026q1</code></li></ul>
+<h2 id="执行摘要">执行摘要</h2>
+<ul><li>贵州茅台 所属行业为 <code>食品饮料</code>，当前预览目标季度为 <code>2026q1</code>；最新已披露季度为 <code>2025q3</code>。</li><li>基于最近 4 个已披露季度的同比中位数，基准情形下我们预计营收 561.55亿元、净利润 302.25亿元、毛利率 89.9%。</li><li>财报前 3 个月股价涨跌幅为 +2.4%，相对沪深300超额收益为 +7.4%；20 日日收益波动率约为 1.3%。</li><li>近 120 天共检索到 295 篇相关研报，卖方目标价中位数为 1827.89元，年度净利润口径中位数为 906.79亿元。</li><li>最新一致预期快照日期为 2026-04-01，目标价为 1836.93元。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="历史经营与财务趋势">历史经营与财务趋势</h2>
+<ul><li>最新已披露季度 <code>2025q3</code> 的营收为 1309.04亿元，净利润为 668.99亿元，营收同比 +6.3%，净利润同比 +6.1%。</li><li>最近 4 个季度毛利率中位数约为 89.9%，现金转化率中位数约为 2.06x。</li><li>最近 4 个季度 ROE 中位数约为 21.3%，费用率中位数约为 无数据。</li></ul>
+<table><thead><tr><th class="align-left">季度</th><th class="align-left">营收</th><th class="align-left">营收同比</th><th class="align-left">净利润</th><th class="align-left">净利润同比</th><th class="align-left">毛利率</th><th class="align-left">费用率</th><th class="align-left">现金转化率</th><th class="align-left">ROE</th></tr></thead><tbody><tr><td class="align-left">2024q1</td><td class="align-left">464.85亿元</td><td class="align-left">无数据</td><td class="align-left">248.82亿元</td><td class="align-left">无数据</td><td class="align-left">91.2%</td><td class="align-left">无数据</td><td class="align-left">1.79x</td><td class="align-left">10.9%</td></tr><tr><td class="align-left">2024q2</td><td class="align-left">834.51亿元</td><td class="align-left">无数据</td><td class="align-left">431.77亿元</td><td class="align-left">无数据</td><td class="align-left">90.1%</td><td class="align-left">无数据</td><td class="align-left">2.37x</td><td class="align-left">17.9%</td></tr><tr><td class="align-left">2024q3</td><td class="align-left">1231.23亿元</td><td class="align-left">无数据</td><td class="align-left">630.31亿元</td><td class="align-left">无数据</td><td class="align-left">89.8%</td><td class="align-left">无数据</td><td class="align-left">2.14x</td><td class="align-left">24.6%</td></tr><tr><td class="align-left">2024q4</td><td class="align-left">1741.44亿元</td><td class="align-left">无数据</td><td class="align-left">893.35亿元</td><td class="align-left">无数据</td><td class="align-left">90.2%</td><td class="align-left">无数据</td><td class="align-left">2.24x</td><td class="align-left">24.6%</td></tr><tr><td class="align-left">2025q1</td><td class="align-left">514.43亿元</td><td class="align-left">+10.7%</td><td class="align-left">277.75亿元</td><td class="align-left">+11.6%</td><td class="align-left">90.5%</td><td class="align-left">无数据</td><td class="align-left">1.82x</td><td class="align-left">10.9%</td></tr><tr><td class="align-left">2025q2</td><td class="align-left">910.94亿元</td><td class="align-left">+9.2%</td><td class="align-left">469.87亿元</td><td class="align-left">+8.8%</td><td class="align-left">89.6%</td><td class="align-left">无数据</td><td class="align-left">2.09x</td><td class="align-left">17.9%</td></tr><tr><td class="align-left">2025q3</td><td class="align-left">1309.04亿元</td><td class="align-left">+6.3%</td><td class="align-left">668.99亿元</td><td class="align-left">+6.1%</td><td class="align-left">89.6%</td><td class="align-left">无数据</td><td class="align-left">2.04x</td><td class="align-left">24.6%</td></tr></tbody></table>
+<h3 id="历史观察要点">历史观察要点</h3>
+<ul><li>最近 4 个季度营收同比中位数约为 +9.2%，净利润同比中位数约为 +8.8%。</li><li>最近 4 个季度毛利率区间约为 89.6% 至 90.5%，说明利润率波动相对可控。</li><li>现金转化率持续高于 1x，意味着经营现金流对利润仍有较强覆盖，财报前应重点验证这一点是否延续。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="预览季度预测框架">预览季度预测框架</h2>
+<ul><li>预测锚点优先使用去年同期 <code>2025q1</code> 与最近 4 个季度同比中位数；如果去年同期缺失，则退化为最近一期数据。</li><li>基准收入同比假设为 +9.2%，基准利润同比假设为 +8.8%；对应 2026q1 的营收预测为 561.55亿元，净利润预测为 302.25亿元。</li><li>基准毛利率假设为 89.9%，基准现金转化率假设为 2.06x。</li><li>最新已披露季度与目标季度之间相隔 2 个季度；间隔越长，预测不确定性越高。</li></ul>
+<table><thead><tr><th class="align-left">指标</th><th class="align-left">基准预测</th><th class="align-left">主要依据</th></tr></thead><tbody><tr><td class="align-left">营收</td><td class="align-left">561.55亿元</td><td class="align-left">去年同期 <code>2025q1</code> 与最近 4 季度营收同比中位数</td></tr><tr><td class="align-left">净利润</td><td class="align-left">302.25亿元</td><td class="align-left">去年同期 <code>2025q1</code> 与最近 4 季度净利润同比中位数</td></tr><tr><td class="align-left">毛利率</td><td class="align-left">89.9%</td><td class="align-left">最近 4 季度毛利率中位数</td></tr><tr><td class="align-left">现金转化率</td><td class="align-left">2.06x</td><td class="align-left">最近 4 季度经营现金流/净利润中位数</td></tr></tbody></table>
+<h3 id="本次财报最值得验证的三个点">本次财报最值得验证的三个点</h3>
+<ul><li><strong>收入节奏</strong>：实际营收是否接近 561.55亿元，以及同比增速是否明显偏离 +9.2% 这一中枢。</li><li><strong>利润兑现</strong>：实际净利润是否接近 302.25亿元，利润弹性是否高于收入弹性。</li><li><strong>利润率与现金流</strong>：毛利率是否守住 89.9% 一线，现金转化率是否仍接近 2.06x。</li></ul>
+<p class="source-note"><em>数据来源：RQData（历史数据），预测为分析师估算，置信度4</em></p>
+<h2 id="卖方预期与市场定价">卖方预期与市场定价</h2>
+<ul><li>最新一致预期快照日期为 2026-04-01，目标价为 1836.93元。</li><li>RQData consensus forward buckets 显示：营收 t1/t2/t3 分别为 1812.78亿元 / 1876.72亿元 / 1979.87亿元；净利润 t1/t2/t3 分别为 900.02亿元 / 935.71亿元 / 990.62亿元。</li><li>近 120 天卖方研报共 295 篇，覆盖机构包括 Goldman Sachs、万联证券、东兴证券、东吴证券、东方财富证券、东莞证券；目标价中位数为 1827.89元，区间为 1470.70元 至 2600.00元。</li><li>研报年度净利润口径中位数为 906.79亿元，离散度约为 13.57亿元。</li><li>这些研报口径是年度维度校准，不应直接等同于目标季度单季预期，但可以帮助判断全年乐观假设是否已经被市场提前计入。</li></ul>
+<h3 id="近期研报样本">近期研报样本</h3>
+<ul><li><strong>申万宏源 / 2026-04-01 19:12:48</strong>：<code>十大金股组合（0401-0430）</code>；目标价 无数据，净利润口径 904.60亿元；摘要：组合说明：“金股组合”一方面体现申万宏源未来1个月的大势研判观点及风格判断结论，另一方面体现我们申万宏源整体研究团队的研究能力与市场竞争力，在严格的申报筛选流程...</li><li><strong>中银国际证券 / 2026-04-01 18:55:31</strong>：<code>4月金股组合</code>；目标价 1897.27元，净利润口径 905.52亿元；摘要：策略观点：国内基本面及资金面环境有望对A股形成支撑。短期来看，中东局势的演进及海峡控制权的争夺或仍为影响A股节奏的重要观察变量。中期来看，国内基本面及资金面环境...</li><li><strong>天风证券 / 2026-04-01 18:54:00</strong>：<code>2026年4月金股（20260401）</code>；目标价 无数据，净利润口径 948.09亿元；摘要：国泰海通。 中际旭创。 新易盛。 永鼎股份。 上海新阳。 金蝶国际。 恺英网络。 芯碁微装。 凯格精机。 万华化学。 牧原股份。 德康农牧。 科伦博泰生物-B。...</li><li><strong>开源证券 / 2026-04-01 17:36:30</strong>：<code>贵州茅台公司信息更新报告：提振行业信心 增强业绩保障</code>；目标价 1897.27元，净利润口径 914.47亿元；摘要：事件：贵州茅台自2026年3月31日起，将飞天53%vol500m贵州茅台合同价格由1169元/瓶调整为1269元/瓶、自营体系零售价由1499元/瓶调整为15...</li><li><strong>爱建证券 / 2026-04-01 17:30:38</strong>：<code>贵州茅台首次覆盖报告：推进市场化改革 龙头持续变革转型</code>；目标价 1897.27元，净利润口径 926.89亿元；摘要：投资评级与估值：预计公司2025-2027年营业收入1859.7/1945.4/2042.0亿元，同比增长6.8%/4.6%/5.0%，归母净利润926.9/9...</li></ul>
+<h3 id="可比公司校准">可比公司校准</h3>
+<ul><li>已提供 2 家可比公司最近一期数据；营收中位数为 420.36亿元，净利润中位数为 165.03亿元，毛利率中位数为 81.0%。</li></ul>
+<table><thead><tr><th class="align-left">可比公司</th><th class="align-left">最新季度</th><th class="align-left">营收</th><th class="align-left">净利润</th><th class="align-left">毛利率</th></tr></thead><tbody><tr><td class="align-left">五粮液<br><code>000858.XSHE</code></td><td class="align-left">2025q3</td><td class="align-left">609.45亿元</td><td class="align-left">222.12亿元</td><td class="align-left">74.9%</td></tr><tr><td class="align-left">泸州老窖<br><code>000568.XSHE</code></td><td class="align-left">2025q3</td><td class="align-left">231.27亿元</td><td class="align-left">107.95亿元</td><td class="align-left">87.1%</td></tr></tbody></table>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="情景分析与市场反应">情景分析与市场反应</h2>
+<ul><li>乐观/基准/悲观情景以基准同比假设为中心上下浮动，并用最近 20 个交易日的 realized volatility 估算财报日反应区间。</li></ul>
+<table><thead><tr><th class="align-left">情景</th><th class="align-left">营收</th><th class="align-left">净利润</th><th class="align-left">毛利率</th><th class="align-left">预期市场反应</th><th class="align-left">概率</th></tr></thead><tbody><tr><td class="align-left">乐观</td><td class="align-left">587.27亿元</td><td class="align-left">324.47亿元</td><td class="align-left">90.9%</td><td class="align-left">+2.0% ~ +4.0%</td><td class="align-left">25%</td></tr><tr><td class="align-left">基准</td><td class="align-left">561.55亿元</td><td class="align-left">302.25亿元</td><td class="align-left">89.9%</td><td class="align-left">-1.0% ~ +1.0%</td><td class="align-left">50%</td></tr><tr><td class="align-left">悲观</td><td class="align-left">535.83亿元</td><td class="align-left">280.03亿元</td><td class="align-left">88.9%</td><td class="align-left">-4.0% ~ -2.0%</td><td class="align-left">25%</td></tr></tbody></table>
+<p class="source-note"><em>数据来源：RQData（历史数据/价格数据），情景分析为分析师估算，置信度4</em></p>
+<h2 id="财报前交易定位">财报前交易定位</h2>
+<ul><li>近 3 个月股价表现为 +2.4%，沪深300 同期为 -5.1%，超额收益为 +7.4%。</li><li>当前价格约为 1267.55元；基于卖方/一致预期目标价的隐含空间约为 +44.2%。</li><li>近 20 日成交额相对前 20 日变化约为 -47.2%，20 日日收益波动率约为 1.3%。</li><li><strong>定位判断</strong>：当前更接近中性 setup，重点看财报是否打破市场已有预期区间。</li><li>财报前如果再出现明显超额收益扩张，而卖方目标价和一致预期没有同步抬升，通常意味着市场已经开始抢跑。</li><li>如果实际财报只能满足基准情景而无法带来新的全年上修线索，短期更容易出现“兑现式”波动。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="关键风险与验证点">关键风险与验证点</h2>
+<ul><li><strong>信息滞后风险</strong>：最新财报仅到 <code>2025q3</code>，距离目标季度 <code>2026q1</code> 已有 2 个季度，预测误差会明显放大。</li><li><strong>卖方分歧风险</strong>：年度净利润口径离散度约为 13.57亿元，说明市场预期并不集中。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="附录生成说明">附录：生成说明</h2>
+<ul><li>报告按模板自动生成，报告日期为 2026-04-02，目标季度为 2026q1。</li><li>公司：贵州茅台（600519.XSHG），行业：食品饮料。</li><li>历史趋势部分基于财务 PIT 数据去重后计算；预测部分属于分析师估算。</li><li>卖方预期部分优先使用 <code>consensus.json</code> 和 <code>research_reports.json</code>，不伪造 market expectations。</li><li>可比公司数据为可选输入，缺失时会在正文中显式说明。</li></ul>
+<h3 id="输入文件加载情况">输入文件加载情况</h3>
+<ul><li><code>company_info.json</code>：1 条记录</li><li><code>industry.json</code>：1 条记录</li><li><code>historical_financials.json</code>：13 条记录</li><li><code>roe_history.json</code>：543 条记录</li><li><code>price_recent.json</code>：58 条记录</li><li><code>hs300_recent.json</code>：58 条记录</li><li><code>consensus.json</code>：80 条记录</li><li><code>research_reports.json</code>：341 条记录</li><li><code>peers_financials.json</code>：24 条记录</li><li><code>peers_instruments.json</code>：2 条记录</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+        <div class="footer">Generated by report-renderer/scripts/render_report.py</div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

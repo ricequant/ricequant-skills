@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>催化剂日历报告</title>
+  <style>
+:root {
+  --paper: #fbf8f1;
+  --surface: #fffdf8;
+  --ink: #1d2430;
+  --muted: #5e6875;
+  --line: #d7d4ca;
+  --accent: #a6482f;
+  --accent-deep: #6b2f21;
+  --accent-soft: #efe2d7;
+  --table-head: #293241;
+  --code-bg: #f3efe8;
+  --quote-bg: #f5ede4;
+  --shadow: 0 24px 80px rgba(24, 31, 42, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(166, 72, 47, 0.10), transparent 32%),
+    linear-gradient(180deg, #f3ecdf 0%, var(--paper) 18%, #f7f4ee 100%);
+  color: var(--ink);
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
+  line-height: 1.75;
+}
+
+a {
+  color: inherit;
+}
+
+.page {
+  width: min(1200px, calc(100vw - 32px));
+  margin: 24px auto 64px;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 24px;
+}
+
+.sidebar {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  background: rgba(255, 253, 248, 0.94);
+  border: 1px solid rgba(107, 47, 33, 0.10);
+  border-radius: 20px;
+  padding: 24px 22px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.eyebrow {
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.sidebar-title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.25;
+}
+
+.meta-list {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.meta-list li + li {
+  margin-top: 8px;
+}
+
+.toc {
+  margin-top: 24px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+
+.toc-title {
+  margin: 0 0 10px;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.toc li + li {
+  margin-top: 8px;
+}
+
+.toc a {
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+
+.toc a:hover {
+  background: var(--accent-soft);
+  transform: translateX(2px);
+}
+
+.toc .level-3 a,
+.toc .level-4 a {
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.report {
+  background: var(--surface);
+  border: 1px solid rgba(41, 50, 65, 0.08);
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.cover {
+  padding: 56px 56px 44px;
+  background:
+    linear-gradient(135deg, rgba(166, 72, 47, 0.96), rgba(76, 33, 24, 0.95)),
+    linear-gradient(180deg, #784032 0%, #3d1e17 100%);
+  color: #fffaf3;
+}
+
+.cover-kicker {
+  margin: 0 0 10px;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.cover-title {
+  margin: 0;
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1.18;
+}
+
+.cover-subtitle {
+  margin: 16px 0 0;
+  font-size: 17px;
+  line-height: 1.6;
+  max-width: 56ch;
+  opacity: 0.92;
+}
+
+.cover-meta {
+  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+}
+
+.chip {
+  border: 1px solid rgba(255, 250, 243, 0.24);
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: rgba(255, 250, 243, 0.08);
+}
+
+.content {
+  padding: 40px 56px 56px;
+}
+
+.content h1,
+.content h2,
+.content h3,
+.content h4 {
+  scroll-margin-top: 24px;
+}
+
+.content h1 {
+  margin: 32px 0 16px;
+  font-size: 30px;
+  line-height: 1.28;
+  color: var(--accent-deep);
+}
+
+.content h2 {
+  margin: 36px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(166, 72, 47, 0.22);
+  font-size: 24px;
+  line-height: 1.3;
+  color: var(--accent-deep);
+}
+
+.content h3 {
+  margin: 26px 0 10px;
+  font-size: 19px;
+  line-height: 1.35;
+}
+
+.content h4 {
+  margin: 18px 0 8px;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.content p {
+  margin: 12px 0;
+  font-size: 15px;
+}
+
+.content ul,
+.content ol {
+  margin: 12px 0 16px;
+  padding-left: 24px;
+}
+
+.content li + li {
+  margin-top: 6px;
+}
+
+.content hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 28px 0;
+}
+
+.content blockquote {
+  margin: 18px 0;
+  padding: 14px 18px;
+  border-left: 4px solid var(--accent);
+  background: var(--quote-bg);
+  color: var(--muted);
+}
+
+.content code {
+  background: var(--code-bg);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 0.92em;
+  font-family: "SFMono-Regular", "Menlo", "Monaco", "Courier New", monospace;
+}
+
+.code-block {
+  overflow-x: auto;
+  background: #211f1c;
+  color: #f6efe7;
+  padding: 16px 18px;
+  border-radius: 16px;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0 12px;
+  table-layout: fixed;
+  font-size: 14px;
+}
+
+.content thead th {
+  background: var(--table-head);
+  color: #f8fafc;
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.content tbody td {
+  padding: 10px 12px;
+  border: 1px solid #ddd7cb;
+  vertical-align: top;
+}
+
+.content tbody tr:nth-child(even) td {
+  background: #fcf8f1;
+}
+
+.align-left {
+  text-align: left;
+}
+
+.align-center {
+  text-align: center;
+}
+
+.align-right {
+  text-align: right;
+}
+
+.source-note {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 13px;
+}
+
+.footer {
+  margin-top: 40px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+}
+
+@media (max-width: 980px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    width: calc(100vw - 18px);
+    margin: 10px auto 32px;
+    gap: 12px;
+  }
+
+  .cover,
+  .content {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .content table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .page {
+    width: auto;
+    margin: 0;
+    display: block;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .report {
+    box-shadow: none;
+    border: 0;
+  }
+
+  .cover {
+    page-break-after: always;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="page">
+    <aside class="sidebar">
+      <p class="eyebrow">RQ Report Renderer</p>
+      <h1 class="sidebar-title">催化剂日历报告</h1>
+      <ul class="meta-list"><li><strong>报告日期</strong> 2026-03-24</li></ul>
+      <nav class="toc">
+<p class="toc-title">Contents</p>
+<ul>
+<li class="level-2"><a href="#执行摘要">执行摘要</a></li>
+<li class="level-2"><a href="#完整日历视图">完整日历视图</a></li>
+<li class="level-2"><a href="#按事件类型分类">按事件类型分类</a></li>
+<li class="level-3"><a href="#财报">财报</a></li>
+<li class="level-3"><a href="#分红">分红</a></li>
+<li class="level-3"><a href="#投资者交流">投资者交流</a></li>
+<li class="level-3"><a href="#公司治理">公司治理</a></li>
+<li class="level-3"><a href="#资本运作">资本运作</a></li>
+<li class="level-2"><a href="#高影响事件详解">高影响事件详解</a></li>
+<li class="level-3"><a href="#招商银行---年度报告公告">招商银行 - 年度报告公告</a></li>
+<li class="level-3"><a href="#中兴通讯---定期报告公告">中兴通讯 - 定期报告公告</a></li>
+<li class="level-3"><a href="#招商银行---年度报告公告">招商银行 - 年度报告公告</a></li>
+<li class="level-2"><a href="#近期已披露催化剂">近期已披露催化剂</a></li>
+<li class="level-2"><a href="#跟踪建议">跟踪建议</a></li>
+<li class="level-2"><a href="#日期不确定事件">日期不确定事件</a></li>
+<li class="level-2"><a href="#附录口径说明">附录：口径说明</a></li>
+</ul>
+</nav>
+    </aside>
+
+    <main class="report">
+      <section class="cover">
+        <p class="cover-kicker">Research Output</p>
+        <h1 class="cover-title">催化剂日历报告</h1>
+        <p class="cover-subtitle">由 Markdown 研究报告自动渲染的单文件 HTML。</p>
+        <div class="cover-meta"><span class="chip">Report Date 2026-03-24</span><span class="chip">Format Standalone HTML</span><span class="chip">Source RQ Research Markdown</span></div>
+      </section>
+
+      <section class="content">
+<h1 id="催化剂日历报告">催化剂日历报告</h1>
+<p>报告日期：2026-03-24 观察区间：2026-03-24 至 2026-04-23 覆盖范围：股票池 3 只证券，窗口内识别到 3 只证券存在事件</p>
+<h2 id="执行摘要">执行摘要</h2>
+<ul><li>未来 31 天共识别 12 个事件，覆盖 3 家公司。</li><li>其中高影响事件 3 个，主要集中在财报和关键信息披露时点。</li><li>事件最密集日期为 2026-03-28（3 个事件）。</li><li>其中 0 个确定日期事件来自更早公告的日程安排，已按实际事件日而非公告披露日纳入日历。</li><li>仍有 0 个事件缺少精确日期，仅能以预计窗口形式跟踪。</li><li>另有 15 个近期已披露催化剂保留在回顾区，供判断未来 30 天潜在影响。</li></ul>
+<h2 id="完整日历视图">完整日历视图</h2>
+<table><thead><tr><th class="align-left">日期</th><th class="align-left">事件数</th><th class="align-left">高影响</th><th class="align-left">主要类型</th><th class="align-left">重点公司/事项</th></tr></thead><tbody><tr><td class="align-left">2026-03-26</td><td class="align-left">1</td><td class="align-left">0</td><td class="align-left">公司治理1</td><td class="align-left"><a href="http://static.sse.com.cn/disclosure/listedinfo/announcement/c/new/2026-03-26/600036_20260326_RB6E.pdf" target="_blank" rel="noreferrer">招商银行 董事会决议公告</a></td></tr><tr><td class="align-left">2026-03-27</td><td class="align-left">1</td><td class="align-left">0</td><td class="align-left">公司治理1</td><td class="align-left"><a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-27/a8cde374-bcac-4d75-8350-349138ff0089.PDF" target="_blank" rel="noreferrer">德赛西威 董事会决议公告</a></td></tr><tr><td class="align-left">2026-03-28</td><td class="align-left">3</td><td class="align-left">1</td><td class="align-left">财报1、公司治理1、分红1</td><td class="align-left"><a href="http://static.sse.com.cn/disclosure/listedinfo/announcement/c/new/2026-03-28/600036_20260328_K353.pdf" target="_blank" rel="noreferrer">招商银行 年度报告公告</a>；<a href="http://static.sse.com.cn/disclosure/listedinfo/announcement/c/new/2026-03-28/600036_20260328_EUR2.pdf" target="_blank" rel="noreferrer">招商银行 董事会决议公告</a>；<a href="http://static.sse.com.cn/disclosure/listedinfo/announcement/c/new/2026-03-28/600036_20260328_89CI.pdf" target="_blank" rel="noreferrer">招商银行 利润分配相关公告</a></td></tr><tr><td class="align-left">2026-03-30</td><td class="align-left">1</td><td class="align-left">0</td><td class="align-left">投资者交流1</td><td class="align-left"><a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-27/7ea11453-bdf9-442b-8bd8-604abdbe43f4.PDF" target="_blank" rel="noreferrer">中兴通讯 业绩说明会公告</a></td></tr><tr><td class="align-left">2026-03-31</td><td class="align-left">1</td><td class="align-left">0</td><td class="align-left">分红1</td><td class="align-left"><a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-31/458ce64c-88ef-4a22-87c6-22943d5546a5.PDF" target="_blank" rel="noreferrer">德赛西威 利润分配相关公告</a></td></tr><tr><td class="align-left">2026-04-01</td><td class="align-left">2</td><td class="align-left">2</td><td class="align-left">财报2</td><td class="align-left"><a href="https://www.shclearing.com.cn/wcm/shch/pages/client/download/download.jsp?FileName=P020260401505497951007.pdf&amp;amp;DownName=1.pdf" target="_blank" rel="noreferrer">中兴通讯 定期报告公告</a>；<a href="https://www.chinabond.com.cn/xxpl/ywzc_fxyfxdh/fxyfxdh_zqzl/zqzl_jrzq/jrzq_cwbg/202604/P020260401572829123211.pdf" target="_blank" rel="noreferrer">招商银行 年度报告公告</a></td></tr><tr><td class="align-left">2026-04-03</td><td class="align-left">2</td><td class="align-left">0</td><td class="align-left">资本运作2</td><td class="align-left"><a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-04-03/c6e13f8e-be1a-42ce-b408-b7795bd51f1f.PDF" target="_blank" rel="noreferrer">中兴通讯 股份回购相关公告</a>；<a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-04-03/d20c6e9f-4125-423c-a55e-c114f2e321c8.PDF" target="_blank" rel="noreferrer">德赛西威 股东增减持相关公告</a></td></tr><tr><td class="align-left">2026-04-07</td><td class="align-left">1</td><td class="align-left">0</td><td class="align-left">分红1</td><td class="align-left">德赛西威 除权除息日</td></tr></tbody></table>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="按事件类型分类">按事件类型分类</h2>
+<h3 id="财报">财报</h3>
+<table><thead><tr><th class="align-left">日期</th><th class="align-left">公司</th><th class="align-left">事件</th><th class="align-left">影响</th><th class="align-left">跟踪要点</th></tr></thead><tbody><tr><td class="align-left">2026-03-28</td><td class="align-left">招商银行</td><td class="align-left">年度报告公告</td><td class="align-left">H</td><td class="align-left">关注年报核心财务表现及分红方案</td></tr><tr><td class="align-left">2026-04-01</td><td class="align-left">中兴通讯</td><td class="align-left">定期报告公告</td><td class="align-left">H</td><td class="align-left">关注定期报告核心披露内容</td></tr><tr><td class="align-left">2026-04-01</td><td class="align-left">招商银行</td><td class="align-left">年度报告公告</td><td class="align-left">H</td><td class="align-left">关注年报核心财务表现及分红方案</td></tr></tbody></table>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h3 id="分红">分红</h3>
+<table><thead><tr><th class="align-left">日期</th><th class="align-left">公司</th><th class="align-left">事件</th><th class="align-left">影响</th><th class="align-left">跟踪要点</th></tr></thead><tbody><tr><td class="align-left">2026-03-28</td><td class="align-left">招商银行</td><td class="align-left">利润分配相关公告</td><td class="align-left">M</td><td class="align-left">关注分红方案、股权登记日和实施安排</td></tr><tr><td class="align-left">2026-03-31</td><td class="align-left">德赛西威</td><td class="align-left">利润分配相关公告</td><td class="align-left">M</td><td class="align-left">关注分红方案、股权登记日和实施安排</td></tr><tr><td class="align-left">2026-04-07</td><td class="align-left">德赛西威</td><td class="align-left">除权除息日</td><td class="align-left">M</td><td class="align-left">分红数据按历史回溯查询，但只有除权除息日落入观察窗口时才计入日历</td></tr></tbody></table>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h3 id="投资者交流">投资者交流</h3>
+<table><thead><tr><th class="align-left">日期</th><th class="align-left">公司</th><th class="align-left">事件</th><th class="align-left">影响</th><th class="align-left">跟踪要点</th></tr></thead><tbody><tr><td class="align-left">2026-03-30</td><td class="align-left">中兴通讯</td><td class="align-left">业绩说明会公告</td><td class="align-left">M</td><td class="align-left">关注交流时点、管理层表述与市场预期差</td></tr></tbody></table>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h3 id="公司治理">公司治理</h3>
+<table><thead><tr><th class="align-left">日期</th><th class="align-left">公司</th><th class="align-left">事件</th><th class="align-left">影响</th><th class="align-left">跟踪要点</th></tr></thead><tbody><tr><td class="align-left">2026-03-26</td><td class="align-left">招商银行</td><td class="align-left">董事会决议公告</td><td class="align-left">M</td><td class="align-left">关注董事会决议是否引出后续催化剂</td></tr><tr><td class="align-left">2026-03-27</td><td class="align-left">德赛西威</td><td class="align-left">董事会决议公告</td><td class="align-left">M</td><td class="align-left">关注董事会决议是否引出后续催化剂</td></tr><tr><td class="align-left">2026-03-28</td><td class="align-left">招商银行</td><td class="align-left">董事会决议公告</td><td class="align-left">M</td><td class="align-left">关注董事会决议是否引出后续催化剂</td></tr></tbody></table>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h3 id="资本运作">资本运作</h3>
+<table><thead><tr><th class="align-left">日期</th><th class="align-left">公司</th><th class="align-left">事件</th><th class="align-left">影响</th><th class="align-left">跟踪要点</th></tr></thead><tbody><tr><td class="align-left">2026-04-03</td><td class="align-left">中兴通讯</td><td class="align-left">股份回购相关公告</td><td class="align-left">M</td><td class="align-left">关注回购节奏、规模与资本配置意图</td></tr><tr><td class="align-left">2026-04-03</td><td class="align-left">德赛西威</td><td class="align-left">股东增减持相关公告</td><td class="align-left">M</td><td class="align-left">关注股东行为及其对市场预期的影响</td></tr></tbody></table>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="高影响事件详解">高影响事件详解</h2>
+<h3 id="招商银行---年度报告公告">招商银行 - 年度报告公告</h3>
+<ul><li>日期：2026-03-28</li><li>类型：财报</li><li>关注点：关注年报核心财务表现及分红方案</li><li>依据：公告标题：招商银行:招商银行股份有限公司2025年度报告摘要；公告类型：定期报告；来源媒体：上海证券交易所</li><li>原文：<a href="http://static.sse.com.cn/disclosure/listedinfo/announcement/c/new/2026-03-28/600036_20260328_K353.pdf" target="_blank" rel="noreferrer">公告链接</a></li><li>数据来源：RQData，置信度5</li></ul>
+<h3 id="中兴通讯---定期报告公告">中兴通讯 - 定期报告公告</h3>
+<ul><li>日期：2026-04-01</li><li>类型：财报</li><li>关注点：关注定期报告核心披露内容</li><li>依据：公告标题：中兴通讯股份有限公司2025年三季度未经审计的合并及母公司财务报表(2)；公告类型：定期报告；来源媒体：上海清算所</li><li>原文：<a href="https://www.shclearing.com.cn/wcm/shch/pages/client/download/download.jsp?FileName=P020260401505497951007.pdf&amp;amp;DownName=1.pdf" target="_blank" rel="noreferrer">公告链接</a></li><li>数据来源：RQData，置信度5</li></ul>
+<h3 id="招商银行---年度报告公告">招商银行 - 年度报告公告</h3>
+<ul><li>日期：2026-04-01</li><li>类型：财报</li><li>关注点：关注年报核心财务表现及分红方案</li><li>依据：公告标题：招商银行股份有限公司2025年度报告；公告类型：定期报告；来源媒体：中国债券信息网</li><li>原文：<a href="https://www.chinabond.com.cn/xxpl/ywzc_fxyfxdh/fxyfxdh_zqzl/zqzl_jrzq/jrzq_cwbg/202604/P020260401572829123211.pdf" target="_blank" rel="noreferrer">公告链接</a></li><li>数据来源：RQData，置信度5</li></ul>
+<h2 id="近期已披露催化剂">近期已披露催化剂</h2>
+<ul><li>以下事项已在观察窗口前披露，但仍可能影响未来 30 天的交易与预期演化。</li></ul>
+<table><thead><tr><th class="align-left">披露日</th><th class="align-left">公司</th><th class="align-left">事项</th><th class="align-left">仍需跟踪</th><th class="align-left">链接</th></tr></thead><tbody><tr><td class="align-left">2026-03-09</td><td class="align-left">中兴通讯</td><td class="align-left">年度报告公告</td><td class="align-left">关注年报核心财务表现及分红方案</td><td class="align-left"><a href="https://www.cfae.cn/SFTP/download?fileName=中兴通讯股份有限公司2025年年度报告.pdf&amp;amp;fileAdd=2026/03/09/16/e4e692933ad2461faee2084f78d48b7e.pdf" target="_blank" rel="noreferrer">原文</a></td></tr><tr><td class="align-left">2026-03-07</td><td class="align-left">中兴通讯</td><td class="align-left">年度报告公告</td><td class="align-left">关注年报核心财务表现及分红方案</td><td class="align-left"><a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-07/d661115d-ca61-4d7c-851a-90df1b62495c.PDF" target="_blank" rel="noreferrer">原文</a></td></tr><tr><td class="align-left">2026-03-06</td><td class="align-left">德赛西威</td><td class="align-left">年度报告公告</td><td class="align-left">关注年报核心财务表现及分红方案</td><td class="align-left"><a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-06/1a53e9d0-2e8a-437b-9c3f-0b1062834cf2.PDF" target="_blank" rel="noreferrer">原文</a></td></tr><tr><td class="align-left">2026-02-11</td><td class="align-left">中兴通讯</td><td class="align-left">定期报告公告</td><td class="align-left">关注定期报告核心披露内容</td><td class="align-left"><a href="https://www.cfae.cn/SFTP/download?fileName=中兴通讯股份有限公司2025年三季度未经审计的合并及母公司财务报表.pdf&amp;amp;fileAdd=2025/11/11/13/42269bc82c6445b09e25b12b5aad628e.pdf" target="_blank" rel="noreferrer">原文</a></td></tr><tr><td class="align-left">2026-02-10</td><td class="align-left">中兴通讯</td><td class="align-left">定期报告公告</td><td class="align-left">关注定期报告核心披露内容</td><td class="align-left"><a href="https://www.cfae.cn/SFTP/download?fileName=中兴通讯股份有限公司2025年三季度未经审计的合并及母公司财务报表.pdf&amp;amp;fileAdd=2025/11/11/13/42269bc82c6445b09e25b12b5aad628e.pdf" target="_blank" rel="noreferrer">原文</a></td></tr><tr><td class="align-left">2026-03-21</td><td class="align-left">招商银行</td><td class="align-left">业绩说明会公告</td><td class="align-left">关注交流时点、管理层表述与市场预期差</td><td class="align-left"><a href="http://static.sse.com.cn/disclosure/listedinfo/announcement/c/new/2026-03-21/600036_20260321_QR66.pdf" target="_blank" rel="noreferrer">原文</a></td></tr><tr><td class="align-left">2026-03-07</td><td class="align-left">中兴通讯</td><td class="align-left">利润分配相关公告</td><td class="align-left">关注分红方案、股权登记日和实施安排</td><td class="align-left"><a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-07/0fcfb341-ee15-4175-84cb-3c2f70404892.PDF" target="_blank" rel="noreferrer">原文</a></td></tr><tr><td class="align-left">2026-03-06</td><td class="align-left">德赛西威</td><td class="align-left">利润分配相关公告</td><td class="align-left">关注分红方案、股权登记日和实施安排</td><td class="align-left"><a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-06/9fa0d6d6-c43f-45bc-bbe2-6bf58d246d99.PDF" target="_blank" rel="noreferrer">原文</a></td></tr><tr><td class="align-left">2026-03-06</td><td class="align-left">德赛西威</td><td class="align-left">业绩说明会公告</td><td class="align-left">关注交流时点、管理层表述与市场预期差</td><td class="align-left"><a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-06/a4c9be4d-d205-4bb7-93ea-e9cfd6e6898d.PDF" target="_blank" rel="noreferrer">原文</a></td></tr><tr><td class="align-left">2026-03-12</td><td class="align-left">德赛西威</td><td class="align-left">股份回购相关公告</td><td class="align-left">关注回购节奏、规模与资本配置意图</td><td class="align-left"><a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-12/73b62897-f3a0-4866-bce5-ff8364734ebd.PDF" target="_blank" rel="noreferrer">原文</a></td></tr><tr><td class="align-left">2026-03-04</td><td class="align-left">中兴通讯</td><td class="align-left">股份回购相关公告</td><td class="align-left">关注回购节奏、规模与资本配置意图</td><td class="align-left"><a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-04/e4def174-eba9-4526-af36-00653e51a87f.PDF" target="_blank" rel="noreferrer">原文</a></td></tr><tr><td class="align-left">2026-03-07</td><td class="align-left">中兴通讯</td><td class="align-left">董事会决议公告</td><td class="align-left">关注董事会决议是否引出后续催化剂</td><td class="align-left"><a href="https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-07/78af6236-8a47-4bfd-bd00-628df49e4d38.PDF" target="_blank" rel="noreferrer">原文</a></td></tr></tbody></table>
+<p class="source-note"><em>数据来源：RQData，置信度5</em></p>
+<h2 id="跟踪建议">跟踪建议</h2>
+<ul><li><strong>优先盯住未来 7 天高影响事项</strong>：招商银行 在短窗口内有关键披露或会议安排，适合放入盘前重点跟踪清单。</li><li><strong>重视“近期已披露 + 即将落地”组合</strong>：招商银行、德赛西威、中兴通讯 已有前序公告铺垫，后续事件更容易形成连续催化。</li><li><strong>分红与股东回报线索</strong>：招商银行、德赛西威 在窗口内有除权除息或相关安排，可结合持仓收益兑现和事件后交易节奏评估。</li></ul>
+<p class="source-note"><em>数据来源：RQData，置信度4-5</em></p>
+<h2 id="日期不确定事件">日期不确定事件</h2>
+<p>当前观察区间内无日期不确定事件。</p>
+<h2 id="附录口径说明">附录：口径说明</h2>
+<ul><li>报告日期：2026-03-24</li><li>未来日历事件数：12；近期已披露催化剂数：15。</li><li>公告口径：若过去公告已明确未来会议或活动日期，报告按实际事件日纳入未来日历，并保留原文链接。</li><li>预计窗口口径：仅在缺少精确日期时展示法定或规则化窗口，不将预计窗口伪装成确定日期。</li><li>数据来源：RQData；规则估算窗口的置信度低于精确公告日期。</li></ul>
+        <div class="footer">Generated by report-renderer/scripts/render_report.py</div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
