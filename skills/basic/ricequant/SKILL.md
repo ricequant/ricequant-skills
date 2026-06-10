@@ -1,6 +1,6 @@
 ---
 name: ricequant
-description: "Ricequant量化平台文档阅读和API查询工具。当Claude需要访问Ricequant量化工具时使用，特别是提到某类金融相关数据或者RQ等字眼时：包括RQAlphaPlus回测框架、RQData数据API、RQFactor因子计算、RQOptimizer优化器、RQPAttr归因分析等文档的查询和阅读。"
+description: "Ricequant量化平台文档阅读和API查询工具。当Claude需要访问Ricequant量化工具时使用，特别是提到某类金融相关数据或者RQ等字眼时：包括RQAlphaPlus回测框架、RQData数据API、RQFactor因子计算、RQOptimizer优化器、RQPAttr归因分析、RQAMS资产管理系统、RQAMSC Python SDK等文档的查询和阅读。"
 license: Proprietary. LICENSE.txt has complete terms
 ---
 
@@ -47,12 +47,26 @@ Ricequant文档主要分为以下几个核心组件：
 - **操作手册**: 本地开发环境配置
 - **组件集成**: 各组件协同工作指南
 
+### 7. RQAMS / RQAMSC - 资产管理系统与 Python SDK
+- **RQAMS Web 文档**: 产品、工作空间、实时监控、持仓分析、风险归因等资产管理系统功能
+- **RQAMSC 文档**: Python SDK 安装、初始化、产品、工作空间、交易流水、估值表、头寸、分析指标等接口
+
 ## 文档访问方法
 
 ### 1. 获取文档索引
 ```bash
 curl -s "https://www.ricequant.com/doc/document-index.txt"
 ```
+通用查询流程是：先用 `document-index.txt` 发现文档标题和 `/doc/sources/...` Markdown 源地址，再按命中的源地址读取正文。若目标组件已在站点导航中公开，但未出现在 `document-index.txt` 中，则按组件文档入口补充定位。
+
+RQAMS / RQAMSC 属于这种补充入口：
+
+```bash
+curl -L -s "https://www.ricequant.com/doc/rqams/"
+curl -L -s "https://www.ricequant.com/doc/rqamsc/"
+curl -L -s "https://www.ricequant.com/doc/sources/rqamsc/index.md"
+```
+
 ### 2. 使用curl参数找
 ```bash
 # 获取并保存到文件
@@ -96,6 +110,7 @@ curl -L -s "https://www.ricequant.com/doc/document-index.txt"
 ### 步骤1：确定需求
 - 明确用户需要查询的具体内容（API、配置、数据字段等）
 - 确定所属的Ricequant组件
+- 如果需求属于 RQAMS / RQAMSC，先尝试按通用索引流程定位；索引未命中时，使用 RQAMS / RQAMSC 组件入口或 RQAMSC Markdown 源文档
 - 绝大部分的查询都是针对RQdata的数据API，其他组件的查询相对较少。无法判断的情况直接查询RQdata的文档索引，看看是否有相关内容。
 
 ### 步骤2：获取文档
@@ -125,6 +140,7 @@ curl -L -s "https://www.ricequant.com/doc/document-index.txt"
 ### 3.使用范围
 - 绝大部分的API查询都是针对RQdata的数据API，其他组件的查询相对较少。
 - RQDATA查询内容包括：API使用方法、参数配置、数据字段，示例。
+- RQAMS / RQAMSC 查询内容包括：Web 功能说明、Python SDK 安装与初始化、产品和工作空间、交易流水、估值表、头寸、持仓与分析接口。
 
 ## 示例查询
 

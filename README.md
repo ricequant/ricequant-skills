@@ -8,7 +8,8 @@ Skills developed by RiceQuant for use with Claude Code.
 skills/
 ├── basic/
 │   ├── ricequant/            # Ricequant 平台通用文档查询
-│   └── rqdata-python/        # RQData Python API 查询技能
+│   ├── rqdata-python/        # RQData Python API 查询技能
+│   └── rqams/                # RQAMS API统一入口，包含 CLI 与 Python SDK
 └── research/                 # 股票研究报告技能（依赖 RQData CLI）
     ├── catalyst-calendar/    # 催化剂日历
     ├── earnings-analysis/    # 财报分析
@@ -37,8 +38,9 @@ Ricequant 平台通用文档查询工具。通过在线文档自动检索，覆�
 | RQOptimizer | 优化器——选股 API、投资组合优化 |
 | RQPAttr | 归因分析——Brinson 行业归因、因子归因 |
 | RQSDK | 本地开发套件——环境配置、组件集成 |
+| RQAMS / RQAMSC | 资产管理系统与 Python SDK——产品、工作空间、交易流水、估值表、持仓、分析与自动化接口 |
 
-**注意：** 需联网访问 `ricequant.com` 文档。
+**注意：** 需联网访问 `ricequant.com` 文档。`document-index.txt` 未列出 RQAMS，查询 RQAMS / RQAMSC 时需直接访问 `https://www.ricequant.com/doc/rqams/` 或 `https://www.ricequant.com/doc/rqamsc/`。
 
 ---
 
@@ -47,6 +49,14 @@ Ricequant 平台通用文档查询工具。通过在线文档自动检索，覆�
 RQData 数据 API 使用指南。支持 A 股、港股、期货、期权、指数、基金、可转债等市场数据查询，包含 HTTP API 和 Python API 文档。本地缓存文档，无需联网即可查询。
 
 **前置要求：** 正确安装 rqsdk 并配置许可证。
+
+---
+
+#### `rqams`
+
+RQAMS API统一入口。常规产品、工作空间、交易流水、估值表、持仓报表、模拟交易、对账、报表和分析任务优先使用 `rqamsc` CLI；需要自定义 Python 脚本、多 API 组合、本地环境诊断或 CLI 未覆盖接口时使用 `rqamsc-python`。
+
+**前置要求：** CLI 路径需可用的 `rqamsc` 命令，CLI 文档缓存由 `skills/basic/rqams/rqams-cli/scripts/init_skill.py` 从 GitHub 生成；Python 路径需可用的 `rqamsc` Python SDK，具体安装、升级和环境配置以 `skills/basic/rqams/rqamsc-python/` 下的专属文档为准。
 
 ---
 
