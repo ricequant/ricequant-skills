@@ -15,13 +15,16 @@ def main() -> int:
 
     try:
         result = initialize_rqamsc(config)
+        print(f"Config source: {result.config_source}")
+        print(f"Profile: {result.profile or '<active>'}")
         print(f"Account: {result.username}")
         print(f"AMS URI: {result.uri}")
         print(f"Workspace: {result.workspace_name}")
         return 0
     except RuntimeConfigError as exc:
-        print("RQAMSC env: incomplete")
-        print(f"Missing: {' / '.join(exc.missing_keys)}")
+        print("RQAMSC config: incomplete")
+        print(f"Missing fields: {' / '.join(exc.missing_keys)}")
+        print("Fix: run rqamsc setup with a profile, or set RQAMSC_PROFILE to an existing profile")
         return 0
     except Exception as exc:
         print(f"RQAMSC init failed: {exc}")

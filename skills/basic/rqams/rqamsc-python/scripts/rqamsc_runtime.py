@@ -8,14 +8,19 @@ from __future__ import annotations
 
 import os
 import sys
+import json
+import platform
 from dataclasses import dataclass
 from pathlib import Path
+
+CLI_CONFIG_ENV = "RQAMS_CLI_CONFIG"
+RQAMSC_PROFILE_ENV = "RQAMSC_PROFILE"
 
 
 @dataclass(frozen=True)
 class RuntimeConfig:
     """
-    Runtime configuration loaded from environment variables.
+    Runtime configuration loaded from a shared profile.
 
     :param python_executable: Active Python interpreter path.
     :param username: RQAMSC login username.
@@ -23,6 +28,8 @@ class RuntimeConfig:
     :param uri: AMS endpoint URI.
     :param ssl_verify: Whether SSL certificate verification is enabled.
     :param workspace: Optional workspace name to switch to after initialization.
+    :param config_source: Source used for auth fields.
+    :param profile: Optional CLI config profile used for auth fields.
     """
 
     python_executable: Path
@@ -31,6 +38,8 @@ class RuntimeConfig:
     uri: str | None
     ssl_verify: bool
     workspace: str | None
+    config_source: str = "environment"
+    profile: str | None = None
 
 
 @dataclass(frozen=True)
@@ -42,28 +51,32 @@ class RuntimeInitResult:
     :param username: RQAMSC login username.
     :param uri: AMS endpoint URI.
     :param workspace_name: Active workspace name after initialization.
+    :param config_source: Source used for auth fields.
+    :param profile: Shared rqams-cli profile used for auth fields.
     """
 
     python_executable: Path
     username: str
     uri: str
     workspace_name: str
+    config_source: str
+    profile: str | None
 
 
 class RuntimeConfigError(RuntimeError):
     """
-    Raised when required RQAMSC environment variables are missing.
+    Raised when required RQAMSC runtime fields are missing.
     """
 
     def __init__(self, missing_keys: list[str]) -> None:
         """
         Initialize the configuration error with missing keys.
 
-        :param missing_keys: Required environment variable names that are absent.
+        :param missing_keys: Required runtime field names that are absent.
         """
 
         self.missing_keys = missing_keys
-        message = f"Missing required env vars: {', '.join(missing_keys)}"
+        message = f"Missing required rqamsc config fields: {', '.join(missing_keys)}"
         super().__init__(message)
 
 
@@ -87,18 +100,108 @@ def parse_ssl_verify(uri: str, raw_value: str | None) -> bool:
     return uri.startswith("https://")
 
 
+def _string_or_none(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    value = value.strip()
+    return value or None
+
+
+def _user_config_dir() -> Path:
+    override = os.getenv("XDG_CONFIG_HOME")
+    if override:
+        return Path(override)
+    system = platform.system()
+    if system == "Windows":
+        appdata = os.getenv("APPDATA")
+        if appdata:
+            return Path(appdata)
+    if system == "Darwin":
+        return Path.home() / "Library" / "Application Support"
+    return Path.home() / ".config"
+
+
+def get_cli_config_path() -> Path:
+    """
+    Return the rqams-cli config path, matching the CLI path rules.
+
+    :return: Path to rqams-cli config.json.
+    """
+
+    override = os.getenv(CLI_CONFIG_ENV)
+    if override and override.strip():
+        return Path(override)
+    return _user_config_dir() / "rqams-cli" / "config.json"
+
+
+def _legacy_cli_config_path() -> Path:
+    return _user_config_dir() / "rqamsc-demo" / "config.json"
+
+
+def load_cli_config() -> dict[str, object]:
+    """
+    Load rqams-cli local configuration.
+
+    Missing config files are treated as empty configuration so environment-only
+    setups continue to work.
+    """
+
+    path = get_cli_config_path()
+    if not path.exists():
+        legacy_path = _legacy_cli_config_path()
+        if not legacy_path.exists():
+            return {}
+        path = legacy_path
+    raw = path.read_text(encoding="utf-8-sig")
+    if not raw.strip():
+        return {}
+    loaded = json.loads(raw)
+    if not isinstance(loaded, dict):
+        raise ValueError(f"rqams-cli config must be a JSON object: {path}")
+    return loaded
+
+
+def select_cli_profile(config: dict[str, object], profile: str | None) -> dict[str, object]:
+    """
+    Promote a selected rqams-cli profile to the active config shape.
+    """
+
+    selected_profile = profile or _string_or_none(config.get("profile"))
+    if not selected_profile:
+        return config
+    profiles = config.get("profiles")
+    if not isinstance(profiles, dict):
+        return config
+    selected = profiles.get(selected_profile)
+    if not isinstance(selected, dict):
+        return config
+    merged = dict(config)
+    merged.update(selected)
+    merged["profile"] = selected_profile
+    return merged
+
+
 def build_runtime_config() -> RuntimeConfig:
     """
-    Load rqamsc runtime configuration from environment variables.
+    Load rqamsc runtime configuration.
+
+    The runtime is profile-based: `rqamsc setup` writes credentials to the
+    rqams-cli config, and `RQAMSC_PROFILE` selects the same profile for Python
+    SDK initialization. Auth fields are not read from standalone environment
+    variables; the shared profile is the single source of truth.
 
     :return: Parsed runtime configuration.
     :raises ValueError: Raised when SSL verification configuration is invalid.
     """
 
-    username = os.getenv("RQAMSC_USERNAME")
-    password = os.getenv("RQAMSC_PASSWORD")
-    uri = os.getenv("RQAMSC_URI")
-    workspace = os.getenv("RQAMSC_WORKSPACE")
+    profile = _string_or_none(os.getenv(RQAMSC_PROFILE_ENV))
+    cli_config = select_cli_profile(load_cli_config(), profile)
+    profile = _string_or_none(cli_config.get("profile")) or profile
+
+    username = _string_or_none(cli_config.get("username"))
+    password = _string_or_none(cli_config.get("password"))
+    uri = _string_or_none(cli_config.get("base_url"))
+    workspace = _string_or_none(cli_config.get("workspace_id"))
     ssl_verify_raw = os.getenv("RQAMSC_SSL_VERIFY")
     ssl_verify = parse_ssl_verify(uri or "", ssl_verify_raw)
 
@@ -109,6 +212,8 @@ def build_runtime_config() -> RuntimeConfig:
         uri=uri,
         ssl_verify=ssl_verify,
         workspace=workspace,
+        config_source="rqams-cli config",
+        profile=profile,
     )
 
 
@@ -122,11 +227,11 @@ def get_missing_required_keys(config: RuntimeConfig) -> list[str]:
 
     missing_keys: list[str] = []
     if not config.username:
-        missing_keys.append("RQAMSC_USERNAME")
+        missing_keys.append("username")
     if not config.password:
-        missing_keys.append("RQAMSC_PASSWORD")
+        missing_keys.append("password")
     if not config.uri:
-        missing_keys.append("RQAMSC_URI")
+        missing_keys.append("base_url")
     return missing_keys
 
 
@@ -166,4 +271,6 @@ def initialize_rqamsc(config: RuntimeConfig | None = None) -> RuntimeInitResult:
         username=runtime_config.username or "",
         uri=runtime_config.uri or "",
         workspace_name=workspace_name,
+        config_source=runtime_config.config_source,
+        profile=runtime_config.profile,
     )

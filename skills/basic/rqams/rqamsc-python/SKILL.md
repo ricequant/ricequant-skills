@@ -34,25 +34,30 @@ python scripts/init_skill.py
 - Python 解释器优先级：
   - 如果设置了 `RQAMSC_PYTHON`，优先使用该解释器
   - 否则使用当前默认 `python`
-- 优先从环境变量读取 AMS 配置：
-  - `RQAMSC_USERNAME`
-  - `RQAMSC_PASSWORD`
-  - `RQAMSC_URI`
+- 运行时凭据优先使用共享 profile：
+  - `rqamsc setup` 写入的 `rqams-cli` profile 是 CLI 和 Python SDK 的共同配置来源
+  - Python 通过 `RQAMSC_PROFILE` 选择 profile
+  - 如果未设置 `RQAMSC_PROFILE`，则使用 `rqams-cli` 配置文件里的当前 active profile 或顶层默认配置
+  - 如果设置了 `RQAMS_CLI_CONFIG`，Python 读取同一个配置文件路径
+- 环境变量只保留必要选择项：
+  - `RQAMSC_PROFILE`
+  - `RQAMS_CLI_CONFIG`
   - `RQAMSC_SSL_VERIFY`
-  - `RQAMSC_WORKSPACE`
   - `RQAMSC_PYTHON`
-- 如果缺少 `RQAMSC_USERNAME`、`RQAMSC_PASSWORD` 或 `RQAMSC_URI`，提示用户补充配置
+- 不要维护另一套账号密码环境变量；账号、密码、AMS 地址和 workspace 只从共享 profile 读取
+- 如果 profile 无法提供用户名、密码或 AMS 地址，提示用户先创建或修复共享 profile：agent 在本地临时目录生成登录 payload 模板文件，例如 `D:\tmp\rqams_setup_<profile>.json`，用户在文件中填写密码后，由 agent 执行 `rqamsc setup --payload @<payload-file>`
 - 如果设置了 `RQAMSC_SSL_VERIFY`，优先使用该值
 - 如果未设置 `RQAMSC_SSL_VERIFY`：
-  - `RQAMSC_URI` 以 `https://` 开头时，默认 `ssl_verify=True`
-  - `RQAMSC_URI` 以 `http://` 开头时，默认 `ssl_verify=False`
-- 如果设置了 `RQAMSC_WORKSPACE`，初始化后自动切换到该 workspace
+  - profile 中的 AMS 地址以 `https://` 开头时，默认 `ssl_verify=True`
+  - profile 中的 AMS 地址以 `http://` 开头时，默认 `ssl_verify=False`
+- 如果 profile 中保存了 workspace，初始化后自动切换到该 workspace
 - 初始化完成后，只简洁告知当前：
   - Python 环境
+  - 配置来源和 profile
   - 登录账号
   - AMS 地址
   - 当前 workspace 名称
-- 同时提示用户：如需切换解释器，可设置 `RQAMSC_PYTHON`
+- 同时提示用户：如需切换账号或 workspace，优先切换 `RQAMSC_PROFILE`；如需切换解释器，可设置 `RQAMSC_PYTHON`
 - 不在初始化阶段主动展开版本影响说明
 - 业务功能文档不重复强调 workspace，默认以上述初始化结果为准
 - 环境摘要默认每个会话只向用户展示一次；只有当前会话第一次进入 `rqamsc` 任务、Python 环境变化、AMS 地址变化、workspace 变化、初始化失败，或用户明确要求查看当前环境时，才重复展示。
@@ -64,6 +69,7 @@ python scripts/init_skill.py
 - 如果文档路径与本地版本存在差异，应优先提示用户当前按本地版本处理
 - 只有在用户明确确认要升级后，才帮助用户升级 `rqamsc`
 - 如需确认版本或接口可用性，直接检查目标 Python 环境中已安装的 `rqamsc` 包；如果设置了 `RQAMSC_PYTHON`，以该解释器环境为准。
+- Python API 字段、示例模板和默认值按当前 Python `rqamsc` 版本独立维护，不要求与 `rqams-cli` 命令字段或 CLI 产品创建模板一致。跨路径比较时只比较业务意图和结果语义，不用字段名强行对齐。
 
 ### 查找文档
 
@@ -86,10 +92,15 @@ python scripts/init_skill.py
 - `section_index.md`
 - `changelog_index.md`
 
+### 批量查询
+
+如果 API 文档或函数签名显示接口支持批量输入，优先按批量接口查询。用户未指定批量大小时，默认每批 10 个标的；每批结果按原始输入顺序合并，并保留失败批次或失败标的的信息。批量失败且错误指向请求规模、字段格式或单个标的问题时，先缩小批量或逐项重试，再向用户报告不可恢复的失败项。
+
 ### 其他注意事项
 
 - 优先使用公开 API 和 README 中已有工作流，不要猜测内部调用方式
 - 涉及写入操作时，先确认目标产品和输入字段
+- 涉及托管事件创建、更新、上传或删除时，先阅读上级 skill 的 `references/custodian_event_workflow.md`；申购、赎回事件写入前必须确认或补齐申赎开放日和 4 位申赎单位净值
 - 示例代码默认是接口模板，除非明确标注，否则不视为已完成端到端验证
 - 常见经验性问题参考：
   - `references/pitfalls.md`

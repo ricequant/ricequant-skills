@@ -45,7 +45,7 @@ AMS 的核心不是单纯查报表，而是围绕产品持续维护一条头寸�
 输入层：
 
 - trade / settlement trade：记录产品交易，是头寸变化来源
-- custodian event / unit event：记录非普通交易类变化，例如托管事件、份额变化
+- custodian event / unit event：记录非普通交易类变化，例如托管事件、份额变化；申购、赎回等托管事件会影响现金、份额和净值，具体写入前确认和净值补填规则见 `custodian_event_workflow.md`
 - valuation report / position statement：提供某一天的完整估值或持仓状态，可作为头寸起点或校准点
 - paper trading signal：模拟交易场景下的特殊输入
 - customized instrument / customized-instrument-price：补充系统默认证券之外的自定义合约和公允价输入
@@ -75,6 +75,7 @@ AMS 的核心不是单纯查报表，而是围绕产品持续维护一条头寸�
 ```text
 查空间或产品 -> workspace / product / product group
 导入流水、估值表、持仓、事件或自定义合约价格 -> 输入层
+录入或修正托管事件 -> 先读 `references/custodian_event_workflow.md`
 维护自定义合约公允价 -> customized-instrument-price
 处理估值表持仓公允价 -> valuation-report 中的 `fair_value` / `fair_value_setl_ccy`
 处理对账价格差异 -> 先读 `references/reconciliation_workflow.md` 中的价格差异规则
