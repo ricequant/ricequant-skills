@@ -21,13 +21,15 @@ rqamsh schema
 
 ## 二、调用
 
-CLI 的连接参数必须位于子命令之前，也可用 `RQAMSH_BASE_URL`、`RQAMSH_WORKSPACE_ID`、`RQAMSH_COOKIE` 提供（前两个必需）：
+CLI 的连接参数必须位于子命令之前，也可用 `RQAMSH_BASE_URL`、`RQAMSH_COOKIE` 提供（只有基础地址必需）：
 
 ```console
-rqamsh --base-url <AMS 地址> --workspace-id <空间 ID> --cookie sid=<令牌> products list
+rqamsh --base-url <AMS 地址> --cookie sid=<令牌> products list
 ```
 
-Python 侧先 `rqamsh.init(base_url, workspace_id=..., cookies={...})`，再用 `rqamsh.<块>.<操作>(...)`；并行多个身份时各自持有显式 `Client`，不共享模块默认实例。参数一律显式写成 `参数名=值`，CLI 用同名的 `--参数名`。会话怎么取得见仓库 `docs/connection.md`。
+CLI 默认使用当前身份可见空间中的第一个，命令直接执行，无需先列举。需要指定非默认分区时在该命令前加 `--workspace-id <id>`（也可用 `RQAMSH_WORKSPACE_ID` 提供）；CLI 每个进程只执行一个操作，所以每个要换分区的命令各自带上该参数。`rqamsh --base-url <AMS 地址> --cookie sid=<令牌> workspaces list` 可查看当前身份可见的空间。
+
+Python 侧先 `rqamsh.init(base_url, cookies={...})`，再用 `rqamsh.<块>.<操作>(...)`；客户端在首次业务调用时自动把当前身份可见空间中的第一个作为默认分区，无需预先指定或列举。需要切换分区时用 `client.workspaces.use(<id 或名称>)`，`client.workspaces.list()` 可随时查看可见空间，这两个调用本身不影响默认分区。并行多个身份时各自持有显式 `Client`，不共享模块默认实例。参数一律显式写成 `参数名=值`，CLI 用同名的 `--参数名`。会话怎么取得见仓库 `docs/connection.md`。
 
 ## 三、取文档
 
