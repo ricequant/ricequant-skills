@@ -1,6 +1,6 @@
 # RQAMS 托管事件处理流程
 
-本文是工具无关的托管事件处理准则，适用于 `rqams-cli` 和 `rqamsc-python`。具体命令字段、SDK 函数和接口参数以各工具的运行时 schema、命令文档或 Python API 文档为准。
+本文是工具无关的托管事件处理准则，适用于 `rqamsh`、`rqams-cli` 和 `rqamsc-python`。具体命令字段、SDK 函数和接口参数以各工具的运行时 schema、命令文档或 Python API 文档为准。
 
 ## 适用场景
 
@@ -33,7 +33,7 @@
 | `product_cost_paid` | `product_cost_type` | `date` 是费用事件日。 | 调整 `product_cost_type` 对应的费用应付科目；不生成份额事件。 | 写入前确认费用类型，不要只用备注表达费用类型；同时注意估值流程中可能存在每日费用计提。 |
 | `subject_adjusted` | `adjust_target`、`adjust_operation` | `date` 是科目调整日。 | 按 `adjust_target` 和 `adjust_operation` 直接调整目标科目；不生成份额事件。 | 写入前确认调整科目、调整方向和目标金额；该类型是直接科目修正，风险高于普通现金事件。 |
 
-不要把上表当作完整接口 schema。具体字段类型、枚举值、批量格式、ID 字段和返回结构仍以当前 `rqams-cli` 运行时 schema、缓存命令文档或 `rqamsc-python` API 文档为准。
+不要把上表当作完整接口 schema。具体字段类型、枚举值、批量格式、ID 字段和返回结构仍以所选执行路径的运行时 schema 与文档为准（`rqamsh schema`、CLI 缓存命令文档或 Python API 文档）。
 
 `portfolio-calc2` 会按事件优先级处理同日多个托管事件，并将 `redemption_paid`、`product_dividend_paid` 同时挂到 `date` 和 `effective_date` 参与计算。自动份额事件是否最终改变产品份额，还取决于估值任务的份额模式；写入前说明影响范围时，应同时说明现金、应付、份额、单位净值和累计净值的预期变化。
 

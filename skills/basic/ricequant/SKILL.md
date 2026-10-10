@@ -50,6 +50,7 @@ Ricequant文档主要分为以下几个核心组件：
 ### 7. RQAMS / RQAMSC - 资产管理系统与 Python SDK
 - **RQAMS Web 文档**: 产品、工作空间、实时监控、持仓分析、风险归因等资产管理系统功能
 - **RQAMSC 文档**: Python SDK 安装、初始化、产品、工作空间、交易流水、估值表、头寸、分析指标等接口
+- **本地 API 技能**: 需要实际查询或写入 AMS 业务数据时，优先走 `rqams` 技能（`rqamsh`，`rqams-harness` 项目的 Python API 与 CLI）；本节只负责在线文档的检索与阅读
 
 ## 文档访问方法
 

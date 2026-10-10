@@ -1,9 +1,11 @@
 ---
 name: rqamsc-python
-description: 使用 rqamsc Python SDK 查询 API、编写最小脚本、导入交易流水和结算流水、定位工作空间与初始化问题。当任务涉及 RQAMS 产品、产品组、头寸、交易流水、估值表或相关 Python 接口时使用。
+description: 过渡路径：用 rqamsc Python SDK 查询 API、编写最小脚本、导入交易流水和结算流水、定位工作空间与初始化问题（优先用 rqamsh，仅当 rqamsh 未覆盖目标操作或用户明确要求 rqamsc SDK 时）。当任务涉及 RQAMS 产品、产品组、头寸、交易流水、估值表或相关 Python 接口时使用。
 ---
 
 # rqamsc-python
+
+> 过渡路径：AMS 业务数据的 Python API 与 CLI 已由 `rqamsh`（`../rqamsh/SKILL.md`）覆盖并优先使用；只有 `rqamsh` 没有目标操作、或用户明确要求 `rqamsc` Python SDK 时，才用本 skill。
 
 ## 使用方法
 

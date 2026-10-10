@@ -89,4 +89,4 @@ AMS 的核心不是单纯查报表，而是围绕产品持续维护一条头寸�
 模拟交易相关 -> paper trading
 ```
 
-确定模块后，再阅读 `rqams-cli/SKILL.md` 和 CLI 文档确认命令命名、payload、文件路径字段和输出格式。
+确定模块后，再按所选执行路径阅读其 SKILL.md 与运行时 schema，确认命令命名、payload、文件路径字段和输出格式（优先路径 `rqamsh` 见 `../rqamsh/SKILL.md`）。

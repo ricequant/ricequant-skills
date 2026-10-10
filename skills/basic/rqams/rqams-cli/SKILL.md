@@ -1,9 +1,11 @@
 ---
 name: rqams-cli
-description: 使用本地 rqamsc CLI 查询和操作 RQAMS 时使用，覆盖产品、workspace、交易流水、估值表、持仓报表、模拟交易、对账、报表和分析数据等标准任务。
+description: 过渡路径：用本地 rqamsc CLI 查询和操作 RQAMS 时使用（优先用 rqamsh，仅当 rqamsh 未覆盖目标操作或用户明确要求 rqamsc CLI 时），覆盖产品、workspace、交易流水、估值表、持仓报表、模拟交易、对账、报表和分析数据等标准任务。
 ---
 
 # RQAMS CLI
+
+> 过渡路径：AMS 业务数据的 Python API 与 CLI 已由 `rqamsh`（`../rqamsh/SKILL.md`）覆盖并优先使用；只有 `rqamsh` 没有目标操作、或用户明确要求 `rqamsc` CLI 时，才用本 skill。
 
 当用户请求可由本地 `rqamsc` 命令完成的 RQAMS 数据查询或操作时，使用此 skill。
 

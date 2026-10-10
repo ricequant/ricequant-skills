@@ -9,7 +9,7 @@ skills/
 ├── basic/
 │   ├── ricequant/            # Ricequant 平台通用文档查询
 │   ├── rqdata-python/        # RQData Python API 查询技能
-│   └── rqams/                # RQAMS API统一入口，包含 CLI 与 Python SDK
+│   └── rqams/                # RQAMS 业务数据技能族：rqamsh（优先）与 CLI/SDK 过渡路径
 └── research/                 # 股票研究报告技能（依赖 RQData CLI）
     ├── catalyst-calendar/    # 催化剂日历
     ├── earnings-analysis/    # 财报分析
@@ -54,9 +54,11 @@ RQData 数据 API 使用指南。支持 A 股、港股、期货、期权、指�
 
 #### `rqams`
 
-RQAMS API统一入口。常规产品、工作空间、交易流水、估值表、持仓报表、模拟交易、对账、报表和分析任务优先使用 `rqamsc` CLI；需要自定义 Python 脚本、多 API 组合、本地环境诊断或 CLI 未覆盖接口时使用 `rqamsc-python`。
+RQAMS 业务数据的统一入口，含三个执行路径：**优先 `rqamsh`**（[`rqams-harness`](https://github.com/ricequant/rqams-harness) 项目的 Python API 与 CLI，覆盖产品与产品组、工作空间、流水与估值报告导入、头寸与估值报告、净值与收益指标、分析与周报、对账、托管与份额事件、资源权限与标签等 19 个业务块）；`rqams-cli` 与 `rqamsc-python` 是既往的 `rqamsc` CLI 与 Python SDK 路径，作为过渡保留，仅在 `rqamsh` 未覆盖目标操作或用户明确要求使用 `rqamsc` CLI 时使用。
 
-**前置要求：** CLI 路径需可用的 `rqamsc` 命令，CLI 文档缓存由 `skills/basic/rqams/rqams-cli/scripts/init_skill.py` 从 GitHub 生成；Python 路径需可用的 `rqamsc` Python SDK，具体安装、升级和环境配置以 `skills/basic/rqams/rqamsc-python/` 下的专属文档为准。
+路由与安全准则在 `skills/basic/rqams/SKILL.md`；`rqamsh` 的安装与自检、调用形态、文档检索在 `skills/basic/rqams/rqamsh/SKILL.md`，连接与会话细节以其指向的 `rqams-harness` 仓库 `README.md` 与 `docs/` 为准；业务链路判断（估值主链路、托管事件、对账）见 `skills/basic/rqams/references/`。
+
+**前置要求：** `rqamsh` 路径需可用的 `rqamsh` 模块（`git clone https://github.com/ricequant/rqams-harness.git` 后在该仓库根目录 `python -m pip install -e .`；`python -m pip install rqams-harness` 只在配置了内网 index [pypi.ricequant.com:8080/simple](https://pypi.ricequant.com:8080/simple/) 的环境可用，公开 PyPI 未发布）；CLI 过渡路径需可用的 `rqamsc` 命令，CLI 文档缓存由 `skills/basic/rqams/rqams-cli/scripts/init_skill.py` 从 GitHub 生成；Python 过渡路径需可用的 `rqamsc` Python SDK，具体安装、升级和环境配置以 `skills/basic/rqams/rqamsc-python/` 下的专属文档为准。
 
 ---
 
