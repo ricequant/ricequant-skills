@@ -313,15 +313,6 @@ a {
   font-size: 13px;
 }
 
-.footer {
-  margin-top: 40px;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
-  font-size: 12px;
-}
-
 @media (max-width: 980px) {
   .page {
     grid-template-columns: 1fr;
@@ -374,5 +365,46 @@ a {
 
   .cover {
     page-break-after: always;
+  }
+
+  .content {
+    padding: 24px 36px 32px;
+  }
+
+  .content p,
+  .content li {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .content h2 {
+    margin-top: 28px;
+    font-size: 21px;
+  }
+
+  .content h3 {
+    margin-top: 20px;
+    font-size: 17px;
+  }
+
+  .content h1,
+  .content h2,
+  .content h3,
+  .content h4 {
+    break-after: avoid;
+  }
+
+  .content table {
+    font-size: 12px;
+  }
+
+  .content thead th,
+  .content tbody td {
+    padding: 6px;
+    overflow-wrap: anywhere;
+  }
+
+  .content tr {
+    break-inside: avoid;
   }
 }

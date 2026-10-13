@@ -422,6 +422,20 @@ def find_sentence_by_keywords(text: str, keywords: Sequence[str], max_chars: int
     return ""
 
 
+def extract_risk_window(text: str, stop_markers: Sequence[str], max_chars: int) -> str:
+    # Annual reports often refer to this section in the opening disclaimer.
+    # Prefer the substantive section and stop before unrelated governance text.
+    risk_stops = [*stop_markers, "(五)其他", "（五）其他", "七、公司", "第四节"]
+    substantive = find_marker_window(
+        text, ["可能面对的风险", "可能面临的风险"], risk_stops, max_chars,
+        forbidden_patterns=("敬请投资者予以关注", "详见本报告", "□适用√不适用"),
+    )
+    return substantive or find_marker_window(
+        text, ["风险提示", "重大风险提示", "风险因素", "重大风险"], risk_stops, max_chars,
+        forbidden_patterns=("敬请投资者予以关注", "详见本报告", "□适用√不适用"),
+    )
+
+
 def extract_sections(title: str, info_type: str, raw_text: str) -> Dict[str, str]:
     squashed = squash_text(raw_text)
     stop_markers = TEXT_SECTION_STOP_MARKERS
@@ -478,12 +492,7 @@ def extract_sections(title: str, info_type: str, raw_text: str) -> Dict[str, str
                 220,
             )
 
-    risk_warning = find_marker_window(
-        squashed,
-        ["风险提示", "重大风险提示", "风险因素", "重大风险"],
-        stop_markers,
-        220,
-    )
+    risk_warning = extract_risk_window(squashed, stop_markers, 220)
 
     return {
         "company_intro": company_intro,
@@ -544,12 +553,7 @@ def build_raw_sections(title: str, info_type: str, raw_text: str) -> Dict[str, s
                 1200,
             )
 
-    risk_warning = find_marker_window(
-        squashed,
-        ["风险提示", "重大风险提示", "风险因素", "重大风险"],
-        stop_markers,
-        1400,
-    )
+    risk_warning = extract_risk_window(squashed, stop_markers, 1400)
 
     return {
         "company_intro": company_intro,

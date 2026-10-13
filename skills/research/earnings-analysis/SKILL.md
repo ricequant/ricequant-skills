@@ -28,6 +28,13 @@ compatibility: "Requires rqdata CLI, Bash, python3. Report structure is managed 
 - “超预期/低于预期”判断必须明确口径，优先使用财报前一致预期和高度相关的卖方点评
 - 研报必须做相关性过滤；行业周报、策略报告不能冒充公司点评
 - 缺失数据时必须明确写“无数据 / 未提供”，不能留空
+- 公告正文说明须区分提取记录、可读原文和已完成摘要；失败状态优先，失败说明不能作为正文摘要。只有对应原文有效的摘要才能进入客户稿，未完成提取不能解释为年报没有相关表述。
+
+## 财务时点与增速口径
+
+- 年度一致预期仅按已验证的基准年度映射；缺失或非法年度不得用运行当天的年份补齐。公告风险摘要须核对正式风险章节，不能将产品章节中的“风险提示不适用”解释为公司不存在经营风险。
+- 历史报告采集财务数据时必须传 `date=REPORT_DATE`；脚本仅保留有效 `info_date <= report-date`，再按股票和季度选择当时最新版本。缺失或无效披露日期的记录不能参与计算。
+- 净利润同比采用 `(本期 - 同期) / abs(同期) * 100`；同期为零或缺失时显示“无数据”。负基数结果表示减亏或亏损扩大，扭亏应明确标注，不能直接解释为常规盈利增长。
 
 ## 数据源分工
 
@@ -255,6 +262,7 @@ rqdata stock cn financial --payload "{
   \"fields\": [\"revenue\", \"net_profit\", \"gross_profit\", \"cash_from_operating_activities\", \"total_assets\", \"total_liabilities\"],
   \"start_quarter\": \"$HISTORY_START_QUARTER\",
   \"end_quarter\": \"$HISTORY_END_QUARTER\",
+  \"date\": \"$REPORT_DATE\",
   \"statements\": \"all\"
 }" --format json > "$DATA_DIR/historical_financials.json"
 

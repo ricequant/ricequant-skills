@@ -29,6 +29,13 @@ compatibility: "Requires rqdata CLI, Bash, python3. Report structure is managed 
 - Thesis 跟踪必须可验证、可反驳；每条关键支柱都应对应可观测指标和反证条件
 - 客户稿不得暴露文件名、字段名、`LLM`、`skill` 或内部 workflow 术语
 - 缺少数据时必须明确写“无数据 / 无事件 / 未验证 / 未提供 thesis 定义”，不能留空
+- 公告未采集、采集失败及查询成功但为空须分别说明；空输入不能推出“没有公告”。催化剂仅统计报告日前 30 天至报告日的有效披露，未命中结论限定于已提供样本。
+- 估值历史区间须标明实际起止日和有效日期数量；不足两个日期时保留当前值，并标注历史数据不足。
+
+## 财务时点与增速口径
+
+- 历史报告采集财务数据时必须传 `date=REPORT_DATE`；脚本仅保留有效 `info_date <= report-date`，再按股票和季度选择当时最新版本。缺失或无效披露日期的记录不能参与计算。
+- 净利润同比采用 `(本期 - 同期) / abs(同期) * 100`；同期为零或缺失时显示“无数据”。负基数结果表示减亏或亏损扩大，扭亏应明确标注，不能直接解释为常规盈利增长。
 
 ## 数据源分工
 
@@ -295,6 +302,7 @@ rqdata stock cn financial --payload "{
   \"fields\": [\"revenue\", \"net_profit\", \"cash_from_operating_activities\"],
   \"start_quarter\": \"$HISTORY_START_QUARTER\",
   \"end_quarter\": \"$HISTORY_END_QUARTER\",
+  \"date\": \"$REPORT_DATE\",
   \"statements\": \"all\"
 }" --format json > "$DATA_DIR/historical_financials.json"
 
@@ -303,6 +311,7 @@ rqdata stock cn financial --payload "{
   \"fields\": [\"revenue\", \"net_profit\", \"cash_from_operating_activities\"],
   \"start_quarter\": \"$HISTORY_START_QUARTER\",
   \"end_quarter\": \"$HISTORY_END_QUARTER\",
+  \"date\": \"$REPORT_DATE\",
   \"statements\": \"all\"
 }" --format json > "$DATA_DIR/latest_financials.json"
 

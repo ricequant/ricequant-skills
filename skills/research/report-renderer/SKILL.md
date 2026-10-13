@@ -23,6 +23,7 @@ compatibility: "Requires python3. Does not rely on repo-level utils or external 
 - 不依赖仓库级 `utils`
 - 不要求外部 Markdown 库；脚本内置最小可用解析器，覆盖当前各 skill 的真实输出结构
 - 输出必须保留标题、章节、表格、列表、代码样式与数据来源标注
+- 客户页面不展示渲染脚本路径或内部格式标签；打印样式保留可读字号，标题尽量与后续内容同页，表格行尽量避免跨页断开
 - 若本机支持打开浏览器，应作为可选行为，而不是强制副作用
 
 ## 目标产出

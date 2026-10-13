@@ -37,6 +37,21 @@ SUMMARY_KEYS = [
     "risk_section",
     "appendix",
 ]
+INPUT_LABELS = {
+    "stock_pool": "股票池",
+    "instrument_meta": "公司基础信息",
+    "latest_financials": "最新财务",
+    "financials_history": "历史财务",
+    "roe": "净资产收益率",
+    "market_cap": "总市值",
+    "pe_ratio": "市盈率",
+    "pb_ratio": "市净率",
+}
+INTERNAL_TERM_RE = re.compile(
+    r"(?<![A-Za-z0-9_])(?:LLM|skill|workflow|web_search|info_date|"
+    + "|".join(name for name in INPUT_LABELS if "_" in name)
+    + r")(?![A-Za-z0-9_])|(?<![A-Za-z0-9_])date\s*=|[A-Za-z0-9_.-]+\.json(?![A-Za-z0-9_])", re.IGNORECASE
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -180,7 +195,7 @@ def render_strategy_candidates(name: str, candidates: Sequence[Dict[str, Any]]) 
                 item.get("sector", "未分类"),
                 item.get("latest_quarter", "无数据"),
                 percent_text(item.get("revenue_yoy")),
-                percent_text(item.get("profit_yoy")),
+                f"{percent_text(item.get('profit_yoy'))}（{item.get('profit_change_type', '无数据')}）",
                 unsigned_percent_text(item.get("roe")),
                 x_text(item.get("pe"), 1),
             ]
@@ -251,7 +266,7 @@ def render_overlap_table(snapshot: Dict[str, Any]) -> str:
             x_text(item.get("pe"), 1),
             x_text(item.get("pb")),
             percent_text(item.get("revenue_yoy")),
-            percent_text(item.get("profit_yoy")),
+            f"{percent_text(item.get('profit_yoy'))}（{item.get('profit_change_type', '无数据')}）",
         ]
         for item in snapshot.get("overlap", {}).get("display_candidates", [])
     ]
@@ -279,10 +294,10 @@ def render_risk_facts(snapshot: Dict[str, Any]) -> str:
 
 def render_appendix_facts(snapshot: Dict[str, Any]) -> str:
     inputs = snapshot.get("inputs", {})
-    rows = [[name, str(value)] for name, value in inputs.items()]
+    rows = [[INPUT_LABELS.get(name, "其他数据"), str(value)] for name, value in inputs.items()]
     if not rows:
         rows = [["无数据", "-"]]
-    return format_table(["输入文件", "记录数"], rows)
+    return format_table(["数据类别", "记录数"], rows)
 
 
 def require_summaries(snapshot: Dict[str, Any]) -> Dict[str, str]:
@@ -293,7 +308,12 @@ def require_summaries(snapshot: Dict[str, Any]) -> Dict[str, str]:
             "结构化快照中的 summaries 缺失，需先由 LLM 回写以下字段："
             + ", ".join(missing)
         )
-    return {key: str(summaries[key]).strip() for key in SUMMARY_KEYS}
+    result = {key: str(summaries[key]).strip() for key in SUMMARY_KEYS}
+    for key, text in result.items():
+        match = INTERNAL_TERM_RE.search(text)
+        if match:
+            raise ValueError(f"客户摘要 {key} 含内部术语 {match.group(0)!r}，请先回写客户可读表述。")
+    return result
 
 
 def render_template(template_text: str, replacements: Dict[str, str]) -> str:
@@ -349,7 +369,7 @@ def main() -> None:
         template_text,
         {
             "REPORT_DATE": str(snapshot.get("report_date", date.today().isoformat())),
-            "STRATEGY": str(snapshot.get("strategy", "all")),
+            "STRATEGY": {"all": "价值、成长与质量", "value": "价值", "growth": "成长", "quality": "质量"}.get(str(snapshot.get("strategy", "all")), "未提供"),
             "EXEC_SUMMARY": summaries["exec_summary"],
             "UNIVERSE_OVERVIEW": summaries["universe_overview"],
             "UNIVERSE_FACTS": render_universe_facts(snapshot),

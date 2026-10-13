@@ -31,6 +31,13 @@ compatibility: "Requires rqdata CLI, Bash, python3. Report structure is managed 
 - `research_reports.json` 若要进入最终报告，必须先在同一文件内回写 `summaries.core_view` 等客户可读摘要；最终报告不直接截断原始 `summary`
 - 缺失数据时必须明确写“无数据 / 未提供 / 未验证”，不能留空
 
+## 财务时点与增速口径
+
+- 一致预期须属于目标公司，且记录日期与创建日期均不晚于报告日；基准年度未验证时不展示年度预测。风险监控缺少当前值或对比值时标为“无法判断”，不得写成“正常”。
+- 历史报告采集财务数据时必须传 `date=REPORT_DATE`；脚本仅保留有效 `info_date <= report-date`，再按股票和季度选择当时最新版本。缺失或无效披露日期的记录不能参与计算。
+- 净利润同比采用 `(本期 - 同期) / abs(同期) * 100`；同期为零或缺失时显示“无数据”。负基数结果表示减亏或亏损扩大，扭亏应明确标注，不能直接解释为常规盈利增长。
+- CAGR 保留同口径序列原有起止年份，仅在起点和终点都为正且间隔至少一年时计算；端点为零、负值或缺失时显示“不可计算”，不得跳过端点改用较短区间。
+
 ## 数据源分工
 
 ### `RQData CLI` 负责
@@ -303,6 +310,7 @@ rqdata stock cn financial --payload "{
   ],
   \"start_quarter\": \"$HISTORY_START_QUARTER\",
   \"end_quarter\": \"$HISTORY_END_QUARTER\",
+  \"date\": \"$REPORT_DATE\",
   \"statements\": \"all\"
 }" --format json > "$DATA_DIR/historical_financials.json"
 ```
@@ -588,6 +596,7 @@ rqdata stock cn financial --payload "{
   ],
   \"start_quarter\": \"$HISTORY_START_QUARTER\",
   \"end_quarter\": \"$HISTORY_END_QUARTER\",
+  \"date\": \"$REPORT_DATE\",
   \"statements\": \"all\"
 }" --format json > "$DATA_DIR/peer_latest_financials.json"
 

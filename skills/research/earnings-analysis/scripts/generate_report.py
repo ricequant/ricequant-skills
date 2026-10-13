@@ -227,6 +227,23 @@ def normalize_name(record: Dict[str, Any]) -> str:
     return str(value).strip() if value not in (None, "") else ""
 
 
+def profit_change_type(current: Optional[float], base: Optional[float]) -> str:
+    """Describe signed profit changes without implying a loss is a profit."""
+    if current is None or base is None:
+        return "无数据"
+    if base == 0:
+        return "同期基数为零"
+    if base < 0:
+        if current > 0:
+            return "扭亏"
+        if current == 0:
+            return "盈亏平衡"
+        return "减亏" if current > base else "亏损扩大" if current < base else "亏损持平"
+    if current < 0:
+        return "转亏"
+    return "利润增长" if current > base else "利润下降" if current < base else "利润持平"
+
+
 def float_or_none(value: Any) -> Optional[float]:
     if value in (None, "", "null"):
         return None
@@ -271,7 +288,7 @@ def format_table(headers: Sequence[str], rows: Sequence[Sequence[str]]) -> str:
 def safe_growth(current: Optional[float], base: Optional[float]) -> Optional[float]:
     if current is None or base in (None, 0):
         return None
-    return (current / base - 1.0) * 100.0
+    return (current - base) / abs(base) * 100.0
 
 
 def safe_ratio(current: Optional[float], base: Optional[float]) -> Optional[float]:
@@ -349,15 +366,8 @@ def announcement_status_label(extract_row: Optional[Dict[str, Any]]) -> str:
 
     extract_status = str(extract_row.get("extract_status") or "").strip()
     fetch_status = str(extract_row.get("fetch_status") or "").strip()
+    raw_sections = extract_row.get("raw_sections") if isinstance(extract_row.get("raw_sections"), dict) else {}
 
-    if extract_status == "ok":
-        return "已提炼关键片段"
-    if extract_status == "partial":
-        return "提炼到部分片段"
-    if extract_status == "no_sections":
-        return "未形成可直接引用片段"
-    if extract_status in {"skipped_non_annual_interim", "not_started", "未提取"}:
-        return "保留原文链接，未抽取正文"
     if extract_status == "unsupported" or fetch_status == "unsupported_file_type":
         return "文件格式暂不支持提炼"
     if extract_status == "fetch_failed":
@@ -366,6 +376,14 @@ def announcement_status_label(extract_row: Optional[Dict[str, Any]]) -> str:
         return "原文解析失败，保留链接"
     if fetch_status and fetch_status not in {"ok", "skipped"}:
         return "原文获取受限，保留链接"
+    if any(extract_section_display_text(extract_row, key) for key in ("company_intro", "management_discussion", "risk_warning", "outlook")):
+        return "提炼到部分片段" if extract_status == "partial" else "已提炼关键片段"
+    if fetch_status == "ok" and extract_status in {"ok", "partial"} and any(raw_sections.values()):
+        return "正文已提取，摘要未完成"
+    if extract_status == "no_sections" or "raw_sections" in extract_row:
+        return "未形成可直接引用片段"
+    if extract_status in {"skipped_non_annual_interim", "not_started", "未提取"}:
+        return "保留原文链接，未抽取正文"
     return "保留原文链接供查阅"
 
 
@@ -433,9 +451,20 @@ def normalize_web_search_findings(records: List[Any], report_date: date) -> List
 
 
 def extract_section_display_text(extract_row: Dict[str, Any], key: str, limit: int = 220) -> str:
+    if str(extract_row.get("fetch_status") or "") not in ("", "ok", "skipped"):
+        return ""
+    if str(extract_row.get("extract_status") or "") not in ("", "ok", "partial"):
+        return ""
     summaries = extract_row.get("summaries") if isinstance(extract_row.get("summaries"), dict) else {}
     legacy_sections = extract_row.get("sections") if isinstance(extract_row.get("sections"), dict) else {}
     raw_sections = extract_row.get("raw_sections") if isinstance(extract_row.get("raw_sections"), dict) else {}
+    source_sections = raw_sections if "raw_sections" in extract_row else legacy_sections
+    if not str(source_sections.get(key) or "").strip():
+        return ""
+    if "raw_sections" in extract_row and (
+        extract_row.get("fetch_status") != "ok" or extract_row.get("extract_status") not in ("ok", "partial")
+    ):
+        return ""
 
     if summaries:
         value = summaries.get(key)
@@ -610,9 +639,11 @@ def consensus_year_map(record: Optional[Dict[str, Any]]) -> Dict[int, Dict[str, 
         return {}
     report_year_raw = record.get("report_year_t")
     try:
-        base_year = int(str(report_year_raw or date.today().year))
-    except ValueError:
-        base_year = date.today().year
+        base_year = int(str(report_year_raw))
+    except (TypeError, ValueError):
+        return {}
+    if not 1900 <= base_year <= 9996:
+        return {}
     year_map: Dict[int, Dict[str, Optional[float]]] = {}
     for field_prefix, key in (
         ("comp_con_operating_revenue", "revenue"),
@@ -825,7 +856,7 @@ def main() -> None:
     price_records = extract_records(read_json_file(data_dir / "price_window.json"))
     benchmark_records = extract_records(read_json_file(data_dir / "benchmark_window.json"))
     consensus_records = extract_records(read_json_file(data_dir / "consensus.json"))
-    research_records = extract_records(read_json_file(data_dir / "research_reports.json"))
+    research_records = extract_named_records(read_json_file(data_dir / "research_reports.json"), "records")
     announcement_records = extract_records(read_json_file(data_dir / "announcement_raw.json"))
     announcement_extract_records = extract_named_records(read_json_file(data_dir / "announcement_extracts.json"), "records")
     web_search_records = extract_records(read_json_file(data_dir / "web_search_findings.json"))
@@ -1184,6 +1215,7 @@ def main() -> None:
     outlook_lines = []
     extract_status_notes = []
     has_annual_or_interim_extract_source = False
+    readable_extract_count = 0
     for item in selected_announcements:
         link = str(item.get("announcement_link") or "")
         extract_row = announcement_extract_index.get(link) or announcement_extract_index.get(str(item.get("title") or ""))
@@ -1207,6 +1239,7 @@ def main() -> None:
             management_discussion = extract_section_display_text(extract_row, "management_discussion", 220)
             risk_warning = extract_section_display_text(extract_row, "risk_warning", 220)
             outlook = extract_section_display_text(extract_row, "outlook", 220)
+            readable_extract_count += int(any((company_intro, management_discussion, risk_warning, outlook)))
             if company_intro:
                 company_intro_lines.append(f"- `{item.get('title')}`：{company_intro}")
             if management_discussion:
@@ -1240,7 +1273,7 @@ def main() -> None:
             management_lines = ["- 当前未获取可直接引用的管理层表述片段。"]
     if not risk_snippet_lines:
         if announcement_extract_records and has_annual_or_interim_extract_source:
-            risk_snippet_lines = ["- 年报正文未提供可直接引用的风险提示片段。"]
+            risk_snippet_lines = ["- 当前未获取可直接引用的年报风险提示片段。"]
         else:
             risk_snippet_lines = ["- 当前未获取可直接引用的风险提示片段。"]
     if not outlook_lines:
@@ -1340,7 +1373,7 @@ def main() -> None:
                     ["增长口径", growth_pillar, f"收入同比 {percent_text(revenue_yoy)}；净利润同比 {percent_text(profit_yoy)}"],
                     ["质量口径", quality_pillar, f"毛利率变动 {percent_text(gross_margin_change)}；现金转化率 {x_text(cash_conversion)}"],
                     ["市场反馈", market_pillar, f"3D 超额收益 {percent_text(excess_3d)}；成交额倍数 {x_text(turnover_change)}"],
-                    ["公告链路", announcement_pillar, f"相关公告 {len(selected_announcements)} 条；正文读取结果 {len(announcement_extract_records)} 条"],
+                    ["公告链路", announcement_pillar, f"相关公告 {len(selected_announcements)} 条；提取记录 {len(announcement_extract_records)} 条；可用正文摘要 {readable_extract_count} 条"],
                     ["外部语境", external_pillar, f"外部补充信息 {len(web_findings)} 条"],
                 ],
             ),
@@ -1418,8 +1451,10 @@ def main() -> None:
         [
             f"- 报告日期：{args.report_date}；公司：{company_name}（{args.stock}）；最新财报季度：{latest_snapshot.quarter}；披露日：{event_date.isoformat()}。",
             f"- 行业：{industry_text}；上市日期：{listed_date.isoformat() if listed_date else '未提供'}；办公地址：{office_address}。",
-            f"- 一致预期口径使用财报披露前最后一条快照与报告日最新快照；本次读取的财报前年份为 {pre_consensus_year} 年，财报后滚动年份为 {post_consensus_year} 年。",
+            f"- 一致预期口径使用财报披露前最后一条快照与报告日最新快照；本次读取的财报前年份为 {str(pre_consensus_year) + '年' if pre_consensus_year is not None else '年份未验证'}，财报后滚动年份为 {str(post_consensus_year) + '年' if post_consensus_year is not None else '年份未验证'}。",
             "- Q2、Q3、Q4 等累计披露口径已拆分为单季度口径，避免将累计值误读为单季变化。",
+            "- 净利润同比按（本期－同期）/同期绝对值计算；同期为零时不计算，负基数须结合减亏、亏损扩大或扭亏解读。",
+            f"- 最新累计净利润变动：{profit_change_type(latest_snapshot.net_profit, yoy_snapshot.net_profit if yoy_snapshot else None)}。",
             "- 股息率原始值为 bps，文中已统一换算为百分比。",
             "- 公告章节优先引用年报或半年报正文片段，其他公告保留原文链接供查阅。",
             f"- 外部实时补充信息：{len(web_findings)} 条；仅用于补充管理层动态、行业和政策语境，不替代 RQData 财务、预期和公告主源。",

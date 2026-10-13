@@ -182,6 +182,23 @@ def normalize_name(record: Dict[str, Any]) -> str:
     return str(value).strip() if value not in (None, "") else ""
 
 
+def profit_change_type(current: Optional[float], base: Optional[float]) -> str:
+    """Describe signed profit changes without implying a loss is a profit."""
+    if current is None or base is None:
+        return "无数据"
+    if base == 0:
+        return "同期基数为零"
+    if base < 0:
+        if current > 0:
+            return "扭亏"
+        if current == 0:
+            return "盈亏平衡"
+        return "减亏" if current > base else "亏损扩大" if current < base else "亏损持平"
+    if current < 0:
+        return "转亏"
+    return "利润增长" if current > base else "利润下降" if current < base else "利润持平"
+
+
 def float_or_none(value: Any) -> Optional[float]:
     if value in (None, "", "null"):
         return None
@@ -348,7 +365,7 @@ def dedupe_financial_records(records: List[Any], stock: str, report_date: date) 
         if not isinstance(item, dict) or normalize_ticker(item) != stock:
             continue
         item_date = parse_iso_date(item.get("info_date"))
-        if item_date and item_date > report_date:
+        if item_date is None or item_date > report_date:
             continue
         quarter = str(item.get("quarter") or "").lower()
         if not parse_quarter_key(quarter):
@@ -390,7 +407,7 @@ def build_financial_trend(records: List[Any], stock: str, report_date: date) -> 
         yoy_revenue = float_or_none(yoy_record.get("revenue")) if yoy_record else None
         yoy_profit = float_or_none(yoy_record.get("net_profit")) if yoy_record else None
         revenue_yoy = ((revenue / yoy_revenue - 1.0) * 100.0) if revenue is not None and yoy_revenue not in (None, 0) else None
-        profit_yoy = ((net_profit / yoy_profit - 1.0) * 100.0) if net_profit is not None and yoy_profit not in (None, 0) else None
+        profit_yoy = ((net_profit - yoy_profit) / abs(yoy_profit) * 100.0) if net_profit is not None and yoy_profit not in (None, 0) else None
         gross_margin = safe_margin(gross_profit, revenue)
         operating_margin = safe_margin(operating_profit, revenue)
         net_margin = safe_margin(net_profit, revenue)
@@ -411,6 +428,7 @@ def build_financial_trend(records: List[Any], stock: str, report_date: date) -> 
                 "cash_conversion": cash_conversion,
                 "revenue_yoy": revenue_yoy,
                 "profit_yoy": profit_yoy,
+                "profit_change_type": profit_change_type(net_profit, yoy_profit),
             }
         )
     return trend
@@ -447,7 +465,7 @@ def forecast_target_quarter(trend: List[Dict[str, Any]], target_quarter: str) ->
         anchor_revenue * (1.0 + (revenue_yoy_base or 0.0) / 100.0) if anchor_revenue is not None else None
     )
     predicted_profit = (
-        anchor_profit * (1.0 + (profit_yoy_base or 0.0) / 100.0) if anchor_profit is not None else None
+        anchor_profit + abs(anchor_profit) * (profit_yoy_base or 0.0) / 100.0 if anchor_profit is not None else None
     )
     predicted_cash = (
         predicted_profit * cash_conversion_base if predicted_profit is not None and cash_conversion_base is not None else None
@@ -758,9 +776,20 @@ def select_relevant_announcements(
 
 
 def extract_section_display_text(extract_row: Dict[str, Any], key: str, limit: int = 220) -> str:
+    if str(extract_row.get("fetch_status") or "") not in ("", "ok", "skipped"):
+        return ""
+    if str(extract_row.get("extract_status") or "") not in ("", "ok", "partial"):
+        return ""
     summaries = extract_row.get("summaries") if isinstance(extract_row.get("summaries"), dict) else {}
     legacy_sections = extract_row.get("sections") if isinstance(extract_row.get("sections"), dict) else {}
     raw_sections = extract_row.get("raw_sections") if isinstance(extract_row.get("raw_sections"), dict) else {}
+    source_sections = raw_sections if "raw_sections" in extract_row else legacy_sections
+    if not str(source_sections.get(key) or "").strip():
+        return ""
+    if "raw_sections" in extract_row and (
+        extract_row.get("fetch_status") != "ok" or extract_row.get("extract_status") not in ("ok", "partial")
+    ):
+        return ""
     if summaries:
         value = summaries.get(key)
         if value not in (None, ""):
@@ -773,7 +802,7 @@ def extract_section_display_text(extract_row: Dict[str, Any], key: str, limit: i
     return ""
 
 
-def build_peer_snapshot(financial_records: List[Any], peer_meta_records: List[Any]) -> Dict[str, Any]:
+def build_peer_snapshot(financial_records: List[Any], peer_meta_records: List[Any], report_date: date) -> Dict[str, Any]:
     meta_map = {
         normalize_ticker(item): normalize_name(item) or normalize_ticker(item)
         for item in peer_meta_records
@@ -792,6 +821,8 @@ def build_peer_snapshot(financial_records: List[Any], peer_meta_records: List[An
         current = seen.get(key)
         current_date = parse_iso_date(current.get("info_date")) if current else None
         item_date = parse_iso_date(item.get("info_date"))
+        if item_date is None or item_date > report_date:
+            continue
         if current is None or (item_date and (current_date is None or item_date >= current_date)):
             seen[key] = item
     latest_by_stock: Dict[str, Dict[str, Any]] = {}
@@ -850,7 +881,7 @@ def build_scenarios(forecast: Dict[str, Any], price_snapshot: Dict[str, Any]) ->
             else None
         )
         profit = (
-            forecast["anchor_profit"] * (1.0 + ((forecast.get("profit_yoy_base") or 0.0) + scenario["profit_delta"]) / 100.0)
+            forecast["anchor_profit"] + abs(forecast["anchor_profit"]) * ((forecast.get("profit_yoy_base") or 0.0) + scenario["profit_delta"]) / 100.0
             if forecast.get("anchor_profit") is not None
             else None
         )
@@ -1006,11 +1037,13 @@ def build_announcement_section(
             management_discussion = extract_section_display_text(extract_row, "management_discussion", 220)
             risk_warning = extract_section_display_text(extract_row, "risk_warning", 220)
             outlook = extract_section_display_text(extract_row, "outlook", 220)
-            if any((company_intro, management_discussion, risk_warning, outlook)):
-                extract_status = "已提炼关键片段"
-            elif str(extract_row.get("fetch_status") or "") not in ("", "ok", "skipped"):
+            if str(extract_row.get("fetch_status") or "") not in ("", "ok", "skipped"):
                 extract_status = "原文获取不完整"
-            elif str(extract_row.get("extract_status") or "") not in ("", "ok", "未提取", "skipped_non_annual_interim"):
+            elif str(extract_row.get("extract_status") or "") not in ("", "ok", "partial"):
+                extract_status = "未形成可引用片段"
+            elif any((company_intro, management_discussion, risk_warning, outlook)):
+                extract_status = "已提炼关键片段"
+            else:
                 extract_status = "未形成可引用片段"
             if company_intro:
                 company_intro_lines.append(f"- `{item.get('title')}`：{company_intro}")
@@ -1085,7 +1118,7 @@ def build_historical_trend_section(trend: List[Dict[str, Any]]) -> str:
     margin_min = min(recent_margins) if recent_margins else None
     margin_max = max(recent_margins) if recent_margins else None
     lines = [
-        f"- 最新已披露季度 `{latest.get('quarter', '无数据')}` 的营收为 {billion_yuan_text(latest.get('revenue'))}，净利润为 {billion_yuan_text(latest.get('net_profit'))}，营收同比 {percent_text(latest.get('revenue_yoy'))}，净利润同比 {percent_text(latest.get('profit_yoy'))}。",
+        f"- 最新已披露季度 `{latest.get('quarter', '无数据')}` 的营收为 {billion_yuan_text(latest.get('revenue'))}，净利润为 {billion_yuan_text(latest.get('net_profit'))}，营收同比 {percent_text(latest.get('revenue_yoy'))}，净利润同比 {percent_text(latest.get('profit_yoy'))}（{latest.get('profit_change_type', '无数据')}）。",
         f"- 最近 4 个季度{margin_label}中位数约为 {percent_text(median_or_none(item.get(margin_field) for item in recent), signed=False)}，"
         f"现金转化率中位数约为 {x_text(median_or_none(item.get('cash_conversion') for item in recent))}。",
         f"- 最近 4 个季度 ROE 中位数约为 {percent_text(median_or_none(item.get('roe') for item in recent), signed=False)}，费用率中位数约为 {percent_text(median_or_none(item.get('expense_ratio') for item in recent), signed=False)}。",
@@ -1098,7 +1131,7 @@ def build_historical_trend_section(trend: List[Dict[str, Any]]) -> str:
             billion_yuan_text(item.get("revenue")),
             percent_text(item.get("revenue_yoy")),
             billion_yuan_text(item.get("net_profit")),
-            percent_text(item.get("profit_yoy")),
+            f"{percent_text(item.get('profit_yoy'))}（{item.get('profit_change_type', '无数据')}）",
             percent_text(item.get(margin_field), signed=False),
             percent_text(item.get("expense_ratio"), signed=False),
             x_text(item.get("cash_conversion")),
@@ -1173,16 +1206,22 @@ def build_expectation_section(
         lines.extend(
             [
                 f"- 最新一致预期快照日期为 {consensus_snapshot.get('date') or '无数据'}，目标价为 {yuan_text(float_or_none(consensus_snapshot.get('con_targ_price')))}。",
-                f"- RQData consensus forward buckets 显示：营收 t1/t2/t3 分别为 "
-                f"{billion_yuan_text(float_or_none(consensus_snapshot.get('comp_con_operating_revenue_t1')))} / "
-                f"{billion_yuan_text(float_or_none(consensus_snapshot.get('comp_con_operating_revenue_t2')))} / "
-                f"{billion_yuan_text(float_or_none(consensus_snapshot.get('comp_con_operating_revenue_t3')))}；"
-                f"净利润 t1/t2/t3 分别为 "
-                f"{billion_yuan_text(float_or_none(consensus_snapshot.get('comp_con_net_profit_t1')))} / "
-                f"{billion_yuan_text(float_or_none(consensus_snapshot.get('comp_con_net_profit_t2')))} / "
-                f"{billion_yuan_text(float_or_none(consensus_snapshot.get('comp_con_net_profit_t3')))}。"
+                "- 以下为卖方年度一致预期，不代表目标季度的单季预测。",
             ]
         )
+        raw_year = str(consensus_snapshot.get("report_year_t") or "")
+        base_year = int(raw_year) if re.fullmatch(r"\d{4}", raw_year) else None
+        if base_year is not None and not 1900 <= base_year <= 9996:
+            base_year = None
+        annual_rows = []
+        for offset in (1, 2, 3):
+            year_label = f"{base_year + offset}年" if base_year is not None else f"未来第{offset}个预测年度（年份未验证）"
+            annual_rows.append([
+                year_label,
+                billion_yuan_text(float_or_none(consensus_snapshot.get(f"comp_con_operating_revenue_t{offset}"))),
+                billion_yuan_text(float_or_none(consensus_snapshot.get(f"comp_con_net_profit_t{offset}"))),
+            ])
+        lines.extend(["", format_table(["预测年度", "营收一致预期", "净利润一致预期"], annual_rows), ""])
     else:
         lines.append("- 当前未识别到有效一致预期快照。")
 
@@ -1360,6 +1399,7 @@ def build_appendix(
         f"- 报告日期：{args.report_date}；公司：{company}（{args.stock}）；目标季度：{args.quarter}。",
         f"- 行业：{industry_name}；预计披露信息：{earnings_event_context}。",
         f"- 历史趋势采用财务 PIT 数据去重口径，预测与情景分析为分析师估算。",
+        "- 净利润同比按（本期－同期）/同期绝对值计算；同期为零时不计算，负基数须结合减亏、亏损扩大或扭亏解读。",
         "- 卖方预期部分优先采用一致预期、财报点评和公司高相关研报，尽量避免低相关样本干扰。",
         "- 公告章节优先引用正式财报和近期经营沟通中的管理层表述，其他公告保留原文链接供查阅。",
         (
@@ -1414,7 +1454,7 @@ def try_render_html(md_path: Path) -> Optional[Path]:
 def main() -> None:
     args = parse_args()
     data_dir = Path(args.data_dir).expanduser()
-    report_date = parse_iso_date(args.report_date) or date.today()
+    report_date = date.fromisoformat(args.report_date)
 
     company_records = extract_records(read_json_file(data_dir / "company_info.json"))
     industry_records = extract_records(read_json_file(data_dir / "industry.json"))
@@ -1423,7 +1463,7 @@ def main() -> None:
     price_recent = extract_records(read_json_file(data_dir / "price_recent.json"))
     hs300_recent = extract_records(read_json_file(data_dir / "hs300_recent.json"))
     consensus_records = extract_records(read_json_file(data_dir / "consensus.json"))
-    research_records = extract_records(read_json_file(data_dir / "research_reports.json"))
+    research_records = extract_named_records(read_json_file(data_dir / "research_reports.json"), "records")
     announcement_records = extract_records(read_json_file(data_dir / "announcement_raw.json"))
     announcement_extract_records = extract_named_records(read_json_file(data_dir / "announcement_extracts.json"), "records")
     peers_financials = extract_records(read_json_file(data_dir / "peers_financials.json"))
@@ -1458,7 +1498,7 @@ def main() -> None:
     aliases = build_company_aliases(company_records, args.stock, company_name)
     research_snapshot = build_research_snapshot(research_records, args.stock, aliases, report_date)
     selected_announcements = select_relevant_announcements(announcement_records, args.stock, report_date, args.quarter.lower())
-    peer_snapshot = build_peer_snapshot(peers_financials, peers_instruments)
+    peer_snapshot = build_peer_snapshot(peers_financials, peers_instruments, report_date)
     scenarios = build_scenarios(forecast, price_snapshot)
     earnings_event_context = build_earnings_event_context(web_findings)
 

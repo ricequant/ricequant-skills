@@ -140,6 +140,23 @@ def normalize_name(record: Dict[str, Any]) -> str:
     return str(value).strip() if value not in (None, "") else ""
 
 
+def profit_change_type(current: Optional[float], base: Optional[float]) -> str:
+    """Describe signed profit changes without implying a loss is a profit."""
+    if current is None or base is None:
+        return "无数据"
+    if base == 0:
+        return "同期基数为零"
+    if base < 0:
+        if current > 0:
+            return "扭亏"
+        if current == 0:
+            return "盈亏平衡"
+        return "减亏" if current > base else "亏损扩大" if current < base else "亏损持平"
+    if current < 0:
+        return "转亏"
+    return "利润增长" if current > base else "利润下降" if current < base else "利润持平"
+
+
 def float_or_none(value: Any) -> Optional[float]:
     if value in (None, "", "null"):
         return None
@@ -339,7 +356,7 @@ def build_industry_map(records: List[Any], stock_ids: Sequence[str]) -> Dict[str
     return result
 
 
-def dedupe_financial_records(records: List[Any], stock_ids: Sequence[str]) -> List[Dict[str, Any]]:
+def dedupe_financial_records(records: List[Any], stock_ids: Sequence[str], report_date: date) -> List[Dict[str, Any]]:
     stock_set = set(stock_ids)
     deduped: Dict[Tuple[str, str], Dict[str, Any]] = {}
     for item in records:
@@ -353,6 +370,8 @@ def dedupe_financial_records(records: List[Any], stock_ids: Sequence[str]) -> Li
         current = deduped.get(key)
         current_date = parse_iso_date(current.get("info_date")) if current else None
         item_date = parse_iso_date(item.get("info_date"))
+        if item_date is None or item_date > report_date:
+            continue
         if current is None or (item_date and (current_date is None or item_date >= current_date)):
             deduped[key] = item
     return list(deduped.values())
@@ -370,7 +389,7 @@ def latest_by_stock(records: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
     return grouped
 
 
-def latest_factor_map(records: List[Any], stock_ids: Sequence[str], field_name: str) -> Dict[str, float]:
+def latest_factor_map(records: List[Any], stock_ids: Sequence[str], field_name: str, report_date: date) -> Dict[str, float]:
     stock_set = set(stock_ids)
     best: Dict[str, Tuple[date, float]] = {}
     for item in records:
@@ -383,7 +402,7 @@ def latest_factor_map(records: List[Any], stock_ids: Sequence[str], field_name: 
         value = float_or_none(item.get(field_name))
         if field_name == "dividend_yield" and value is not None:
             value = value / 100.0
-        if event_date is None or value is None:
+        if event_date is None or event_date > report_date or value is None:
             continue
         current = best.get(stock)
         if current is None or event_date >= current[0]:
@@ -413,20 +432,21 @@ def build_sector_rows(
     pe_records: List[Any],
     pb_records: List[Any],
     dividend_records: List[Any],
+    report_date: date,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     names = build_name_map(instrument_records, stock_ids)
     industries = build_industry_map(industry_records, stock_ids)
-    financial_deduped = dedupe_financial_records(financial_records, stock_ids)
+    financial_deduped = dedupe_financial_records(financial_records, stock_ids, report_date)
     latest_records = latest_by_stock(financial_deduped)
     dominant = dominant_quarter(latest_records)
     yoy_quarter = same_quarter_last_year(dominant) if dominant else None
 
     by_stock_quarter = {(normalize_ticker(item), str(item.get("quarter") or "").lower()): item for item in financial_deduped}
-    roe_map = latest_factor_map(roe_records, stock_ids, "return_on_equity_weighted_average")
-    market_cap_map = latest_factor_map(market_cap_records, stock_ids, "market_cap")
-    pe_map = latest_factor_map(pe_records, stock_ids, "pe_ratio")
-    pb_map = latest_factor_map(pb_records, stock_ids, "pb_ratio")
-    dividend_map = latest_factor_map(dividend_records, stock_ids, "dividend_yield")
+    roe_map = latest_factor_map(roe_records, stock_ids, "return_on_equity_weighted_average", report_date)
+    market_cap_map = latest_factor_map(market_cap_records, stock_ids, "market_cap", report_date)
+    pe_map = latest_factor_map(pe_records, stock_ids, "pe_ratio", report_date)
+    pb_map = latest_factor_map(pb_records, stock_ids, "pb_ratio", report_date)
+    dividend_map = latest_factor_map(dividend_records, stock_ids, "dividend_yield", report_date)
 
     rows: List[Dict[str, Any]] = []
     coverage_counts = Counter(str(item.get("quarter") or "").lower() for item in latest_records.values())
@@ -444,7 +464,7 @@ def build_sector_rows(
         yoy_revenue = float_or_none(yoy.get("revenue")) if yoy else None
         yoy_profit = float_or_none(yoy.get("net_profit")) if yoy else None
         revenue_yoy = ((revenue / yoy_revenue - 1.0) * 100.0) if revenue is not None and yoy_revenue not in (None, 0) else None
-        profit_yoy = ((net_profit / yoy_profit - 1.0) * 100.0) if net_profit is not None and yoy_profit not in (None, 0) else None
+        profit_yoy = ((net_profit - yoy_profit) / abs(yoy_profit) * 100.0) if net_profit is not None and yoy_profit not in (None, 0) else None
         gross_margin = ((gross_profit / revenue) * 100.0) if gross_profit is not None and revenue not in (None, 0) else None
         net_margin = ((net_profit / revenue) * 100.0) if net_profit is not None and revenue not in (None, 0) else None
         debt_ratio = ((total_liabilities / total_assets) * 100.0) if total_liabilities is not None and total_assets not in (None, 0) else None
@@ -467,6 +487,7 @@ def build_sector_rows(
                 "cash_conversion": cash_conversion,
                 "revenue_yoy": revenue_yoy,
                 "profit_yoy": profit_yoy,
+                "profit_change_type": profit_change_type(net_profit, yoy_profit),
                 "roe": roe_map.get(stock),
                 "market_cap": market_cap_map.get(stock),
                 "pe": pe_map.get(stock),
@@ -686,7 +707,7 @@ def build_exec_summary(
             f"- 一句话判断：`{industry}` 当前呈现“{operating_state}”特征，{market_style}。",
             f"- 样本覆盖：股票池 {stats['pool_size']} 家，进入主导财报季度 {quoted(stats['dominant_quarter'] or '无数据')} 比较口径的公司 {stats['covered_size']} 家，覆盖率约 {percent_text(safe_ratio(stats['covered_size'], stats['pool_size']), signed=False)}。",
             f"- 行业体量：总市值约为 {billion_yuan_text(summary.get('total_market_cap'))}，主导季度合计营收 {billion_yuan_text(summary.get('total_revenue'))}、净利润 {billion_yuan_text(summary.get('total_profit'))}，整体毛利率约为 {percent_text(summary.get('gross_margin'), signed=False)}。",
-            f"- 景气读数：营收同比中位数 {percent_text(summary.get('revenue_yoy_median'))}，净利润同比中位数 {percent_text(summary.get('profit_yoy_median'))}，其中营收正增长公司占比 {percent_text(summary.get('revenue_positive_ratio'), signed=False)}，利润正增长公司占比 {percent_text(summary.get('profit_positive_ratio'), signed=False)}。",
+            f"- 景气读数：营收同比中位数 {percent_text(summary.get('revenue_yoy_median'))}，净利润同比中位数 {percent_text(summary.get('profit_yoy_median'))}，其中营收正增长公司占比 {percent_text(summary.get('revenue_positive_ratio'), signed=False)}，利润同比改善公司占比 {percent_text(summary.get('profit_positive_ratio'), signed=False)}。",
             f"- 质量与估值：ROE 中位数 {percent_text(summary.get('roe_median'), signed=False)}，股息率中位数 {percent_text(summary.get('dividend_median'), signed=False)}，正 PE 样本均值 / 中位数分别为 {x_text(summary.get('pe_average'), 1)} / {x_text(summary.get('pe_median'), 1)}。",
             f"- 交易表现：近 180 天行业收益中位数 {percent_text(summary.get('sector_return_median'))}，相对基准超额收益 {percent_text(summary.get('excess_return'))}，上涨家数占比 {percent_text(summary.get('breadth'), signed=False)}，CR5 约为 {percent_text(cr5, signed=False)}。",
             f"- 龙头定位：当前市值龙头为 **{top_company['name']}**（{top_company['order_book_id']}），总市值约 {billion_yuan_text(top_company.get('market_cap'))}。"
@@ -746,7 +767,7 @@ def build_sector_state(
     low_pe_names = format_company_list(ranked_rows(filtered_rows, "pe", reverse=False, require_positive=True), "pe", lambda value: x_text(value, 1), limit=4)
     lines = [
         f"- 当前行业状态判断为：**{operating_state}**。",
-        f"- 从覆盖样本看，营收正增长公司占比约 {percent_text(summary.get('revenue_positive_ratio'), signed=False)}，利润正增长公司占比约 {percent_text(summary.get('profit_positive_ratio'), signed=False)}，说明 `{industry}` 内部修复并不完全同步。",
+        f"- 从覆盖样本看，营收正增长公司占比约 {percent_text(summary.get('revenue_positive_ratio'), signed=False)}，利润同比改善公司占比约 {percent_text(summary.get('profit_positive_ratio'), signed=False)}，说明 `{industry}` 内部修复并不完全同步。",
         f"- 市场交易层面呈现：**{market_style}**。近 180 天行业收益中位数 {percent_text(summary.get('sector_return_median'))}，超额收益 {percent_text(summary.get('excess_return'))}，上涨广度 {percent_text(summary.get('breadth'), signed=False)}。",
         f"- 质量层面，ROE 不低于 10% 的公司占比约 {percent_text(summary.get('high_roe_ratio'), signed=False)}，现金转化率不低于 1x 的公司占比约 {percent_text(summary.get('cash_conversion_ratio'), signed=False)}，说明行业内部仍可区分出具备盈利兑现能力的经营主体。",
         f"- 回报层面，有股息回报记录的公司占比约 {percent_text(summary.get('dividend_payer_ratio'), signed=False)}；若行业股息率中位数偏低，通常意味着资金更看重成长兑现而非现金回报。",
@@ -779,7 +800,7 @@ def build_financial_section(rows: Sequence[Dict[str, Any]], summary: Dict[str, A
             billion_yuan_text(item.get("revenue")),
             percent_text(item.get("revenue_yoy")),
             billion_yuan_text(item.get("net_profit")),
-            percent_text(item.get("profit_yoy")),
+            f"{percent_text(item.get('profit_yoy'))}（{item.get('profit_change_type', '无数据')}）",
             percent_text(item.get("gross_margin"), signed=False),
             x_text(item.get("cash_conversion")),
         ]
@@ -866,7 +887,7 @@ def build_valuation_section(rows: Sequence[Dict[str, Any]], summary: Dict[str, A
             x_text(item.get("pb")),
             percent_text(item.get("dividend_yield"), signed=False),
             percent_text(item.get("roe"), signed=False),
-            percent_text(item.get("profit_yoy")),
+            f"{percent_text(item.get('profit_yoy'))}（{item.get('profit_change_type', '无数据')}）",
         ]
         for item in positive_pe_ranked[:12]
     ]
@@ -907,7 +928,7 @@ def build_performance_section(rows: Sequence[Dict[str, Any]], returns: Dict[str,
             percent_text(item.get("period_return")),
             percent_text(item.get("roe"), signed=False),
             x_text(item.get("pe"), 1),
-            percent_text(item.get("profit_yoy")),
+            f"{percent_text(item.get('profit_yoy'))}（{item.get('profit_change_type', '无数据')}）",
             percent_text(item.get("dividend_yield"), signed=False),
         ]
         for item in ranked[:12]
@@ -979,7 +1000,7 @@ def build_investment_framework_section(
             str(item["score"]),
             x_text(item.get("pe"), 1),
             percent_text(item.get("roe"), signed=False),
-            percent_text(item.get("profit_yoy")),
+            f"{percent_text(item.get('profit_yoy'))}（{item.get('profit_change_type', '无数据')}）",
             percent_text(item.get("dividend_yield"), signed=False),
             percent_text(item.get("period_return")),
         ]
@@ -1051,6 +1072,7 @@ def build_appendix(args: argparse.Namespace, sector_definition: Optional[Dict[st
         f"- 当前行业来源为 `{(sector_definition or {}).get('industry_source', '未提供')}`，行业层级为 `{(sector_definition or {}).get('industry_level', '未提供')}`。",
         "- 估值和价格指标应使用最近非空因子日；若最近交易日返回空值，需要向前回溯至可用日期。",
         "- 股息率原始单位为 bps，报告展示时已换算为百分比。",
+        "- 净利润同比按（本期－同期）/同期绝对值计算；同期为零时不计算，负基数须结合减亏、亏损扩大或扭亏解读。",
         "- 本报告旨在提供行业横向比较和跟踪框架，不替代针对单一公司的深度尽调。",
         "",
         "*数据来源：RQData，置信度5*",
@@ -1098,6 +1120,7 @@ def try_render_html(md_path: Path) -> Optional[Path]:
 def main() -> None:
     args = parse_args()
     data_dir = Path(args.data_dir).expanduser()
+    report_date = date.fromisoformat(args.report_date)
 
     sector_definition = read_json_file(data_dir / "sector_definition.json")
     stock_pool_records = extract_records(read_json_file(data_dir / "stock_pool.json"))
@@ -1124,12 +1147,13 @@ def main() -> None:
         stock_ids,
         instrument_records,
         industry_records,
-        latest_financials or historical_financials,
+        historical_financials + latest_financials,
         roe_records,
         market_cap_records,
         pe_records,
         pb_records,
         dividend_records,
+        report_date,
     )
     returns = build_return_map(price_records, stock_ids)
     benchmark_return = build_benchmark_return(benchmark_records)

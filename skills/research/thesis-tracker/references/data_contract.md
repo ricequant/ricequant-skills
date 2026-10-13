@@ -135,6 +135,14 @@ Returned fields typically include:
 - `date`
 - `pe_ratio` or `pb_ratio`
 
+Historical valuation ranges use valid observations no later than the report date, deduplicated by date. At least two distinct dates are required; the report shows the actual date span and count. A single-date snapshot supplies the current value only, with history marked insufficient.
+
+## Announcement Availability
+
+`announcement_raw.json` must distinguish an absent file, a failed query and an empty result. Bare `[]` has no confirmed collection status and is reported as unavailable input, not proof of no announcements. An explicitly completed empty query may use `{"status": "ok", "data": []}` or `{"success": true, "data": []}`; failures may use `{"status": "error", "error": "...", "data": []}` or `{"success": false, "data": []}`. Preserve the actual query status; do not invent it after a failed or unexecuted request.
+
+Catalysts include only valid disclosure dates from 30 days before the report date through the report date. No-match statements describe the provided sample, not the absence of all company announcements.
+
 ## Price Records
 
 `price_6m.json` should include:
@@ -232,3 +240,7 @@ Confidence ceiling by `source_type`:
 - `inference`: `1`
 
 The generator uses external findings only as supplementary thesis-validation context. Low-confidence findings should be treated as watch items rather than thesis-changing facts.
+
+- 财务记录先排除缺失 / 无效 `info_date` 及 `info_date > report-date`，再按同一股票同一季度选择当时最新披露版本；采集参数必须传 `date=REPORT_DATE`
+
+- 净利润同比口径：`(本期净利润 - 同期净利润) / abs(同期净利润) * 100`；同期为零或缺失时结果为 `null`。负基数反映盈亏改善 / 恶化，报告须区分减亏、亏损扩大与扭亏。

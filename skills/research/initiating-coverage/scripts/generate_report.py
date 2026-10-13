@@ -112,6 +112,12 @@ def extract_records(payload: Any) -> List[Any]:
     return []
 
 
+def extract_named_records(payload: Any, key: str) -> List[Any]:
+    if isinstance(payload, dict) and isinstance(payload.get(key), list):
+        return list(payload[key])
+    return extract_records(payload)
+
+
 def parse_iso_date(value: Any) -> Optional[date]:
     if value in (None, "", "null"):
         return None
@@ -131,7 +137,7 @@ def parse_iso_date(value: Any) -> Optional[date]:
         "%Y-%m-%dT%H:%M:%S.%f",
     ):
         try:
-            return datetime.strptime(text[: len(fmt)], fmt).date()
+            return datetime.strptime(text, fmt).date()
         except ValueError:
             continue
     try:
@@ -150,10 +156,12 @@ def parse_timestamp(value: Any) -> Optional[datetime]:
         "%Y-%m-%d %H:%M:%S",
         "%Y/%m/%d %H:%M:%S",
         "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S.%f",
+        "%Y-%m-%d %H:%M:%S.%f",
         "%Y-%m-%d",
     ):
         try:
-            return datetime.strptime(text[: len(fmt)], fmt)
+            return datetime.strptime(text, fmt)
         except ValueError:
             continue
     return None
@@ -202,6 +210,23 @@ def normalize_ticker(record: Dict[str, Any]) -> str:
 def normalize_name(record: Dict[str, Any]) -> str:
     value = pick_first(record, NAME_FIELDS)
     return str(value).strip() if value not in (None, "") else ""
+
+
+def profit_change_type(current: Optional[float], base: Optional[float]) -> str:
+    """Describe signed profit changes without implying a loss is a profit."""
+    if current is None or base is None:
+        return "无数据"
+    if base == 0:
+        return "同期基数为零"
+    if base < 0:
+        if current > 0:
+            return "扭亏"
+        if current == 0:
+            return "盈亏平衡"
+        return "减亏" if current > base else "亏损扩大" if current < base else "亏损持平"
+    if current < 0:
+        return "转亏"
+    return "利润增长" if current > base else "利润下降" if current < base else "利润持平"
 
 
 def float_or_none(value: Any) -> Optional[float]:
@@ -257,17 +282,17 @@ def ratio_or_none(numerator: Optional[float], denominator: Optional[float], mult
 def safe_growth(current: Optional[float], base: Optional[float]) -> Optional[float]:
     if current is None or base in (None, 0):
         return None
-    return (current / base - 1.0) * 100.0
+    return (current - base) / abs(base) * 100.0
 
 
 def cagr(values: Sequence[Tuple[int, Optional[float]]]) -> Optional[float]:
-    usable = [(year, value) for year, value in values if value not in (None, 0)]
-    if len(usable) < 2:
+    """Use the original chronological endpoints; CAGR requires positive values."""
+    if len(values) < 2:
         return None
-    start_year, start_value = usable[0]
-    end_year, end_value = usable[-1]
+    start_year, start_value = values[0]
+    end_year, end_value = values[-1]
     periods = end_year - start_year
-    if periods <= 0 or start_value in (None, 0) or end_value is None:
+    if periods <= 0 or start_value is None or end_value is None or start_value <= 0 or end_value <= 0:
         return None
     return ((end_value / start_value) ** (1 / periods) - 1.0) * 100.0
 
@@ -592,7 +617,7 @@ def choose_latest_record_by_cutoff(records: List[Any], cutoff: date) -> Optional
             continue
         event_dt = parse_timestamp(item.get("create_tm") or item.get("date"))
         event_date = parse_iso_date(item.get("date") or item.get("create_tm"))
-        if event_dt is None or event_date is None or event_date > cutoff:
+        if event_dt is None or event_date is None or event_date > cutoff or event_dt.date() > cutoff:
             continue
         if best is None or event_dt >= best[0]:
             best = (event_dt, item)
@@ -602,7 +627,12 @@ def choose_latest_record_by_cutoff(records: List[Any], cutoff: date) -> Optional
 def consensus_year_map(record: Optional[Dict[str, Any]]) -> Dict[int, Dict[str, Optional[float]]]:
     if not record:
         return {}
-    base_year = int(str(record.get("report_year_t") or date.today().year))
+    try:
+        base_year = int(str(record.get("report_year_t")))
+    except (TypeError, ValueError):
+        return {}
+    if not 1900 <= base_year <= 9996:
+        return {}
     year_map: Dict[int, Dict[str, Optional[float]]] = {}
     for field_prefix, key in (
         ("comp_con_operating_revenue", "revenue"),
@@ -878,7 +908,7 @@ def main() -> None:
     benchmark_records = extract_records(read_json_file(data_dir / "benchmark_price.json"))
     dividend_history_records = extract_records(read_json_file(data_dir / "dividend_history.json"))
     consensus_records = extract_records(read_json_file(data_dir / "consensus.json"))
-    research_records = extract_records(read_json_file(data_dir / "research_reports.json"))
+    research_records = extract_named_records(read_json_file(data_dir / "research_reports.json"), "records")
     web_search_records = extract_records(read_json_file(data_dir / "web_search_findings.json"))
     peer_pool_records = extract_records(read_json_file(data_dir / "peer_pool.json"))
     peer_company_records = extract_records(read_json_file(data_dir / "peer_company_info.json"))
@@ -936,7 +966,10 @@ def main() -> None:
     )
 
     validate_web_search_records(web_search_records)
-    validate_dataset(latest_snapshot, price_points_raw, consensus_records, peer_rows)
+    stock_consensus = [item for item in consensus_records if isinstance(item, dict) and normalize_ticker(item) == args.stock]
+    consensus_latest = choose_latest_record_by_cutoff(stock_consensus, report_date)
+    consensus_prior = choose_latest_record_by_cutoff(stock_consensus, report_date - timedelta(days=60))
+    validate_dataset(latest_snapshot, price_points_raw, [consensus_latest] if consensus_latest else [], peer_rows)
     assert latest_snapshot is not None
 
     latest_single = to_single_quarter(latest_snapshot, prev_snapshot)
@@ -951,8 +984,6 @@ def main() -> None:
     aliases = company_aliases(company_info, args.stock)
     related_reports = filter_related_reports(research_records, aliases, report_date)
 
-    consensus_latest = choose_latest_record_by_cutoff(consensus_records, report_date)
-    consensus_prior = choose_latest_record_by_cutoff(consensus_records, report_date - timedelta(days=60))
     consensus_latest_map = consensus_year_map(consensus_latest)
     consensus_prior_map = consensus_year_map(consensus_prior)
     forecast_years = sorted(
@@ -1156,48 +1187,46 @@ def main() -> None:
         None,
     )
 
+    forecast_profit_change = safe_growth(
+        consensus_latest_map.get(forecast_years[0], {}).get("profit") if forecast_years else None,
+        consensus_prior_map.get(forecast_years[0], {}).get("profit") if forecast_years else None,
+    )
     risk_rows = [
         [
             "净利润一致预期 60 天变化",
-            percent_text(safe_growth(
-                consensus_latest_map.get(forecast_years[0], {}).get("profit") if forecast_years else None,
-                consensus_prior_map.get(forecast_years[0], {}).get("profit") if forecast_years else None,
-            )),
+            percent_text(forecast_profit_change),
             "-5%",
-            "关注" if (forecast_years and safe_growth(
-                consensus_latest_map.get(forecast_years[0], {}).get("profit"),
-                consensus_prior_map.get(forecast_years[0], {}).get("profit"),
-            ) or 0.0) <= -5 else "正常",
+            "无法判断" if forecast_profit_change is None else "关注" if forecast_profit_change <= -5 else "正常",
         ],
         [
             "经营现金流 / 净利润",
             x_text(cash_conversion),
             "<0.8x",
-            "关注" if cash_conversion is not None and cash_conversion < 0.8 else "正常",
+            "无法判断" if cash_conversion is None else "关注" if cash_conversion < 0.8 else "正常",
         ],
         [
             "资产负债率同比变化",
             percent_text((debt_ratio - yoy_debt_ratio) if debt_ratio is not None and yoy_debt_ratio is not None else None),
             ">+5pct",
-            "关注" if debt_ratio is not None and yoy_debt_ratio is not None and debt_ratio - yoy_debt_ratio > 5 else "正常",
+            "无法判断" if debt_ratio is None or yoy_debt_ratio is None else "关注" if debt_ratio - yoy_debt_ratio > 5 else "正常",
         ],
         [
             "PE 相对 peer 中位数",
             percent_text(safe_growth(latest_pe, peer_pe_median)),
             ">+20%",
-            "关注" if latest_pe is not None and peer_pe_median not in (None, 0) and latest_pe > peer_pe_median * 1.2 else "正常",
+            "无法判断" if latest_pe is None or peer_pe_median in (None, 0) else "关注" if latest_pe > peer_pe_median * 1.2 else "正常",
         ],
         [
             "1Y 相对基准超额收益",
             percent_text(excess_returns["1Y"]),
             "<-10%",
-            "关注" if excess_returns["1Y"] is not None and excess_returns["1Y"] < -10 else "正常",
+            "无法判断" if excess_returns["1Y"] is None else "关注" if excess_returns["1Y"] < -10 else "正常",
         ],
         [
             "第一大股东持股",
             percent_text(top1_total, signed=False),
             ">50%",
-            "关注" if top1_total is not None and top1_total > 50 else "正常",
+            "无法判断" if top1_total is None else "关注" if top1_total > 50 else "正常",
         ],
     ]
 
@@ -1255,7 +1284,7 @@ def main() -> None:
         )
 
     risk_fact_lines = [
-        f"- 净利润一致预期 60 天变化约为 {percent_text(safe_growth(consensus_latest_map.get(forecast_years[0], {}).get('profit') if forecast_years else None, consensus_prior_map.get(forecast_years[0], {}).get('profit') if forecast_years else None))}。",
+        f"- 净利润一致预期 60 天变化约为 {percent_text(forecast_profit_change)}。",
         f"- 经营现金流 / 净利润约为 {x_text(cash_conversion)}，资产负债率约为 {percent_text(debt_ratio, signed=False)}。",
         f"- PE 相对 peer 中位数偏离约 {percent_text(safe_growth(latest_pe, peer_pe_median))}，PB 相对 peer 中位数偏离约 {percent_text(safe_growth(latest_pb, peer_pb_median))}。",
         f"- 过去 1Y / 3Y 相对基准超额收益约为 {percent_text(excess_returns['1Y'])} / {percent_text(excess_returns['3Y'])}。",
@@ -1275,7 +1304,7 @@ def main() -> None:
         peer_pool_rows.append(
             [
                 normalize_ticker(item) or "无数据",
-                str(item.get("selection_level") or "无数据"),
+                {"third": "同三级行业", "second": "同二级行业", "target": "覆盖公司"}.get(str(item.get("selection_level") or ""), "未提供"),
                 billion_yuan_text(float_or_none(item.get("market_cap"))),
             ]
         )
@@ -1314,7 +1343,7 @@ def main() -> None:
                 ],
             ),
             "",
-            f"可比公司按照统一筛选规则生成：优先选择与目标公司同三级行业的上市公司，样本不足时再扩展到二级行业，最终保留 {count_text(len(peer_rows))} 只代表性样本，并按最新可得市值排序。",
+            f"可比公司按照统一筛选规则生成：优先选择与目标公司同三级行业的上市公司，样本不足时再扩展到二级行业，最终保留 {count_text(len(peer_rows))} 代表性样本，并按最新可得市值排序。",
             f"当前样本的可比季度为 `{comparison_quarter or latest_snapshot.quarter}`，这样估值与盈利对比尽量保持在同一财务口径下。",
             "",
             format_table(["股票代码", "选择层级", "最新市值"], peer_pool_rows or [["无数据", "无数据", "无数据"]]),
@@ -1372,7 +1401,7 @@ def main() -> None:
                 same_quarter_rows or [["无数据", "无数据", "无数据", "无数据", "无数据", "无数据", "无数据", "无数据"]],
             ),
             "",
-            f"基于同口径序列，收入 CAGR 约为 {percent_text(revenue_cagr)}，净利润 CAGR 约为 {percent_text(profit_cagr)}。最新累计口径收入 / 净利润同比约为 {percent_text(revenue_yoy)} / {percent_text(profit_yoy)}，环比约为 {percent_text(revenue_qoq)} / {percent_text(profit_qoq)}。",
+            f"基于同口径序列，收入 CAGR 为 {percent_text(revenue_cagr) if revenue_cagr is not None else '不可计算'}，净利润 CAGR 为 {percent_text(profit_cagr) if profit_cagr is not None else '不可计算'}。CAGR 仅在所示序列的起点、终点均为正且间隔至少一年时计算；端点缺失、零值或负值时不计算。最新累计口径收入 / 净利润同比约为 {percent_text(revenue_yoy)} / {percent_text(profit_yoy)}，环比约为 {percent_text(revenue_qoq)} / {percent_text(profit_qoq)}。",
             f"若拆到单季度口径，收入同比约 {percent_text(single_revenue_yoy)}，净利润同比约 {percent_text(single_profit_yoy)}；这一组数据更适合观察短期经营节奏是否出现变化。",
             "最近 8 个已披露季度的累计/单季度口径串联如下：",
             *quarter_fact_lines,
@@ -1426,6 +1455,7 @@ def main() -> None:
     expectation_and_sellside = "\n".join(
         [
             "市场预期章节展示一致预期时间序列与相关卖方材料摘要，重点观察盈利预测、目标价与机构表述的变化方向。",
+            "一致预期基准年份未验证，年度预测无法展示。" if not consensus_latest_map else "",
             *expectation_fact_lines,
             "",
             format_table(
@@ -1438,7 +1468,7 @@ def main() -> None:
             *report_fact_lines,
             "",
             format_table(
-                ["日期", "机构", "标题", "目标价", "净利润t", "摘要摘录"],
+                ["日期", "机构", "标题", "目标价", "当年净利润预测", "摘要摘录"],
                 report_rows or [["无数据", "无数据", "无数据", "无数据", "无数据", "无数据"]],
             ),
             "",
@@ -1527,6 +1557,8 @@ def main() -> None:
         [
             f"- 报告日期：`{report_date.isoformat()}`；目标股票：`{args.stock}`；当前识别财报季度：`{latest_snapshot.quarter}`；可比样本数量：`{len(peer_rows)}`。",
             "- 若某项数据缺失，报告会明确展示“无数据/未提供”。",
+            "- 净利润同比按（本期－同期）/同期绝对值计算；同期为零时不计算，负基数须结合减亏、亏损扩大或扭亏解读。",
+            f"- 最新累计净利润变动：{profit_change_type(latest_snapshot.net_profit, yoy_snapshot.net_profit if yoy_snapshot else None)}。",
             "- 研报样本优先保留公司直接相关材料；标题不相关、来源不匹配或未形成客户可读摘要的样本不会进入正文。",
             "- 可比公司表、收益表和风险信号表均基于同一报告日口径生成，适合作为后续持续跟踪的对照基线。",
             "",

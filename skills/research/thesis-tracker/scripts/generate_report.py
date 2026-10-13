@@ -9,7 +9,7 @@ import re
 import shutil
 import subprocess
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
@@ -196,6 +196,23 @@ def normalize_name(record: Dict[str, Any]) -> str:
     return str(value).strip() if value not in (None, "") else ""
 
 
+def profit_change_type(current: Optional[float], base: Optional[float]) -> str:
+    """Describe signed profit changes without implying a loss is a profit."""
+    if current is None or base is None:
+        return "无数据"
+    if base == 0:
+        return "同期基数为零"
+    if base < 0:
+        if current > 0:
+            return "扭亏"
+        if current == 0:
+            return "盈亏平衡"
+        return "减亏" if current > base else "亏损扩大" if current < base else "亏损持平"
+    if current < 0:
+        return "转亏"
+    return "利润增长" if current > base else "利润下降" if current < base else "利润持平"
+
+
 def float_or_none(value: Any) -> Optional[float]:
     if value in (None, "", "null"):
         return None
@@ -338,7 +355,7 @@ def dedupe_financial_records(records: List[Any], stock: str, report_date: date) 
         if normalize_ticker(item) != stock:
             continue
         item_date = parse_iso_date(item.get("info_date"))
-        if item_date and item_date > report_date:
+        if item_date is None or item_date > report_date:
             continue
         quarter = str(item.get("quarter") or "")
         if not quarter:
@@ -402,8 +419,8 @@ def latest_factor_value(records: List[Any], stock: str, field: str, report_date:
     return best_value
 
 
-def factor_range(records: List[Any], stock: str, field: str, report_date: date) -> Tuple[Optional[float], Optional[float]]:
-    values: List[float] = []
+def factor_range_text(records: List[Any], stock: str, field: str, report_date: date, decimals: int = 2) -> str:
+    values: Dict[date, float] = {}
     for item in records:
         if not isinstance(item, dict) or normalize_ticker(item) != stock:
             continue
@@ -411,10 +428,16 @@ def factor_range(records: List[Any], stock: str, field: str, report_date: date) 
         value = float_or_none(item.get(field))
         if event_date is None or value is None or event_date > report_date:
             continue
-        values.append(value)
+        values[event_date] = value
     if not values:
-        return None, None
-    return min(values), max(values)
+        return "历史数据不足（无有效日期）"
+    start, end = min(values), max(values)
+    if len(values) == 1:
+        return f"历史数据不足（仅 1 个日期：{start.isoformat()}）"
+    return (
+        f"{ratio_text(min(values.values()), decimals)} - {ratio_text(max(values.values()), decimals)}"
+        f"（{start.isoformat()} 至 {end.isoformat()}，{len(values)} 个日期）"
+    )
 
 
 def build_as_of_time(report_date: date, *collections: List[Any]) -> str:
@@ -596,7 +619,26 @@ def catalyst_title_priority(title: str, category: str) -> int:
     return 10 + CATEGORY_PRIORITY.get(category, 9)
 
 
-def extract_catalysts(records: List[Any], stock: str) -> List[CatalystItem]:
+def announcement_coverage_note(payload: Any, stock: str) -> Optional[str]:
+    """A source result can describe a sample; absent inputs cannot prove no events."""
+    if payload is None:
+        return "公告数据未获取，无法判断近期是否存在公告催化。"
+    if isinstance(payload, dict):
+        status = str(payload.get("status") or "").lower()
+        if payload.get("error") or payload.get("success") is False or status in ("error", "failed", "failure"):
+            return "公告采集失败，无法判断近期是否存在公告催化。"
+    records = extract_records(payload)
+    valid = [item for item in records if isinstance(item, dict) and normalize_ticker(item) == stock
+             and item.get("title") and parse_iso_date(item.get("info_date")) is not None]
+    if valid:
+        return None
+    if isinstance(payload, dict) and (payload.get("success") is True or str(payload.get("status") or "").lower() in ("ok", "success")):
+        if not records:
+            return "公告查询返回零条记录，未形成可验证的公告催化；查询时段以数据来源为准。"
+    return "公告输入为空或没有该公司的有效记录，无法判断近期是否存在公告催化。"
+
+
+def extract_catalysts(records: List[Any], stock: str, report_date: date) -> List[CatalystItem]:
     items: List[CatalystItem] = []
     seen = set()
     for item in records:
@@ -609,7 +651,7 @@ def extract_catalysts(records: List[Any], stock: str) -> List[CatalystItem]:
         if category is None:
             continue
         event_date = parse_iso_date(item.get("info_date"))
-        if event_date is None:
+        if event_date is None or not report_date - timedelta(days=30) <= event_date <= report_date:
             continue
         key = (title, event_date.isoformat())
         if key in seen:
@@ -671,7 +713,7 @@ def metric_lookup(financial_records: Sequence[Dict[str, Any]], roe_value: Option
     yoy_profit = float_or_none(yoy.get("net_profit")) if yoy else None
 
     revenue_yoy = ((latest_revenue / yoy_revenue - 1.0) * 100.0) if latest_revenue is not None and yoy_revenue not in (None, 0) else None
-    profit_yoy = ((latest_profit / yoy_profit - 1.0) * 100.0) if latest_profit is not None and yoy_profit not in (None, 0) else None
+    profit_yoy = ((latest_profit - yoy_profit) / abs(yoy_profit) * 100.0) if latest_profit is not None and yoy_profit not in (None, 0) else None
     cash_profit_ratio = (latest_cash / latest_profit) if latest_cash is not None and latest_profit not in (None, 0) else None
 
     return {
@@ -705,7 +747,7 @@ def evaluate_rule(value: Optional[float], operator: str, threshold: float) -> bo
 def default_pillars(metrics: Dict[str, Optional[float]]) -> List[Dict[str, Any]]:
     return [
         {"name": "收入规模继续扩张", "metric": "latest_revenue_yoy_pct", "operator": ">=", "threshold": 0.0, "rationale": "默认框架要求收入同比不转负。"},
-        {"name": "归母净利润保持增长", "metric": "latest_net_profit_yoy_pct", "operator": ">=", "threshold": 0.0, "rationale": "默认框架要求利润同比延续正增长。"},
+        {"name": "净利润同比改善", "metric": "latest_net_profit_yoy_pct", "operator": ">=", "threshold": 0.0, "rationale": "按同期利润绝对值基数检验盈亏是否改善，减亏不等同于已经盈利。"},
         {"name": "ROE维持双位数", "metric": "latest_roe", "operator": ">=", "threshold": 10.0, "rationale": "默认框架要求资本效率保持双位数。"},
         {"name": "现金创造不弱于利润", "metric": "latest_cash_profit_ratio", "operator": ">=", "threshold": 1.0, "rationale": "默认框架要求经营现金流覆盖利润。"},
     ]
@@ -874,7 +916,9 @@ def main() -> None:
     pb_records = extract_records(read_json_file(data_dir / "pb_ratio.json"))
     dividend_records = extract_records(read_json_file(data_dir / "dividend.json"))
     shareholder_records = extract_records(read_json_file(data_dir / "shareholder_top10.json"))
-    announcement_records = extract_records(read_json_file(data_dir / "announcement_raw.json"))
+    announcement_payload = read_json_file(data_dir / "announcement_raw.json")
+    announcement_records = extract_records(announcement_payload)
+    announcement_note = announcement_coverage_note(announcement_payload, args.stock)
     web_search_records = extract_records(read_json_file(data_dir / "web_search_findings.json"))
     validate_web_search_records(web_search_records)
     network_search_findings = extract_external_findings(web_search_records)
@@ -887,9 +931,7 @@ def main() -> None:
                 break
     company_name = company_name or args.stock
 
-    financial_history = dedupe_financial_records(historical_financials, args.stock, report_date)
-    financial_latest = dedupe_financial_records(latest_financials, args.stock, report_date)
-    base_financials = financial_latest or financial_history
+    base_financials = dedupe_financial_records(historical_financials + latest_financials, args.stock, report_date)
 
     latest_record = base_financials[-1] if base_financials else None
     latest_quarter = str(latest_record.get("quarter")) if latest_record else "无数据"
@@ -901,11 +943,13 @@ def main() -> None:
     roe_value = latest_roe_value(roe_records, args.stock)
     latest_pe = latest_factor_value(pe_records, args.stock, "pe_ratio", report_date)
     latest_pb = latest_factor_value(pb_records, args.stock, "pb_ratio", report_date)
-    pe_min, pe_max = factor_range(pe_records, args.stock, "pe_ratio", report_date)
-    pb_min, pb_max = factor_range(pb_records, args.stock, "pb_ratio", report_date)
     ownership = shareholder_summary(shareholder_records, args.stock)
     latest_dividend_record = latest_dividend(dividend_records, args.stock)
-    catalysts = extract_catalysts(announcement_records, args.stock)
+    catalysts = extract_catalysts(announcement_records, args.stock, report_date) if announcement_note is None else []
+    catalyst_summary = announcement_note or (
+        f"最近 30 天在已提供公告样本中识别出 {len(catalysts)} 条高相关度公告催化。"
+        if catalysts else "在已提供公告样本中，最近 30 天未识别到高相关度公告催化。"
+    )
     as_of_time = build_as_of_time(
         report_date,
         latest_financials,
@@ -940,6 +984,9 @@ def main() -> None:
 
     latest_revenue = float_or_none(latest_record.get("revenue")) if latest_record else None
     latest_profit = float_or_none(latest_record.get("net_profit")) if latest_record else None
+    latest_profit_change = profit_change_type(
+        latest_profit, float_or_none(yoy_record.get("net_profit")) if yoy_record else None
+    )
     latest_cash = float_or_none(latest_record.get("cash_from_operating_activities")) if latest_record else None
 
     exec_summary_lines = [
@@ -950,10 +997,10 @@ def main() -> None:
         f"最近 ROE 为 {unsigned_percent_text(roe_value)}，经营现金流/净利润为 {ratio_text(metrics['latest_cash_profit_ratio'])}；"
         f"当前 PE / PB 约为 {ratio_text(latest_pe, 1)} / {ratio_text(latest_pb)}。",
         (
-            f"最近 30 天筛选出 {len(catalysts)} 条高相关度公告催化，资本回报方面最新分红记录为 `{latest_dividend_record.get('quarter')}`，"
+            f"{catalyst_summary}资本回报方面最新分红记录为 `{latest_dividend_record.get('quarter')}`，"
             f"前十大股东合计持股比例约 {unsigned_percent_text(ownership['top10'], 2)}。"
             if latest_dividend_record
-            else f"最近 30 天筛选出 {len(catalysts)} 条高相关度公告催化，当前股东结构期末为 `{ownership['latest_period'] or '无数据'}`。"
+            else f"{catalyst_summary}当前股东结构期末为 `{ownership['latest_period'] or '无数据'}`。"
         ),
     ]
     if network_search_findings:
@@ -1006,7 +1053,7 @@ def main() -> None:
         pillar_lines.append("")
         pillar_lines.append(
             f"最新报告期 {latest_quarter} 对应营收 {yuan_text(latest_revenue)}、净利润 {yuan_text(latest_profit)}、经营现金流 {yuan_text(latest_cash)}；"
-            f"对比去年同期后，营收同比 {percent_text(metrics['latest_revenue_yoy_pct'])}，净利润同比 {percent_text(metrics['latest_net_profit_yoy_pct'])}。"
+            f"对比去年同期后，营收同比 {percent_text(metrics['latest_revenue_yoy_pct'])}，净利润同比 {percent_text(metrics['latest_net_profit_yoy_pct'])}（{latest_profit_change}）。"
         )
     pillar_lines.append("")
     pillar_lines.append("### 支柱详解")
@@ -1032,8 +1079,8 @@ def main() -> None:
         f"- **沪深300回报**：{percent_text(benchmark_return)}",
         f"- **超额收益**：{percent_text(excess_return)}",
         f"- **最近成交额**：{yuan_text(latest_turnover)}" if latest_turnover is not None else "- **最近成交额**：无数据",
-        f"- **当前 PE / 历史区间**：{ratio_text(latest_pe, 1)} / {ratio_text(pe_min, 1)} - {ratio_text(pe_max, 1)}",
-        f"- **当前 PB / 历史区间**：{ratio_text(latest_pb)} / {ratio_text(pb_min)} - {ratio_text(pb_max)}",
+        f"- **当前 PE / 历史区间**：{ratio_text(latest_pe, 1)} / {factor_range_text(pe_records, args.stock, 'pe_ratio', report_date, 1)}",
+        f"- **当前 PB / 历史区间**：{ratio_text(latest_pb)} / {factor_range_text(pb_records, args.stock, 'pb_ratio', report_date)}",
         "",
         "| 指标 | 当前值 | 说明 |",
         "| --- | ---: | --- |",
@@ -1105,7 +1152,7 @@ def main() -> None:
                 f"| {item.event_date.isoformat()} | `{item.title}` | {catalyst_expected_impact(item)} | {item.category} / {item.info_type} | 已披露 |"
             )
     else:
-        catalyst_lines.append("- 最近 30 天未识别到高相关度公告催化。")
+        catalyst_lines.append(f"- {catalyst_summary}")
 
     catalyst_lines.append("")
     catalyst_lines.append("### 已实现/已披露催化剂详解")
@@ -1117,7 +1164,7 @@ def main() -> None:
                 f"{catalyst_expected_impact(item)}" + (f" {link_text}" if link_text else "")
             )
     else:
-        catalyst_lines.append("- 最近 30 天未识别到可跟踪的高优先级公告催化。")
+        catalyst_lines.append(f"- {catalyst_summary}")
 
     catalyst_lines.append("")
     if high_conf_network_findings:
@@ -1199,7 +1246,7 @@ def main() -> None:
     update_lines = [
         f"- **{report_date.isoformat()} 更新**：最新跟踪报告期为 `{latest_quarter}`，共验证 {len(pillars)} 项支柱，通过 {passed_count} 项，当前信念度更新为 `{conviction}`。",
         f"- **价格与估值**：当前价 {price_text(latest_price)}，目标价 {target_price_text}，静态空间 {percent_text(target_upside)}；当前 PE / PB 为 {ratio_text(latest_pe, 1)} / {ratio_text(latest_pb)}。",
-        f"- **催化剂增量**：最近 30 天识别出 {len(catalysts)} 条高相关度公告催化，最高优先级事项为 `{catalysts[0].title}`。" if catalysts else "- **催化剂增量**：最近 30 天未识别到新增高优先级催化。",
+        f"- **催化剂增量**：{catalyst_summary}" + (f"最高优先级事项为 `{catalysts[0].title}`。" if catalysts else ""),
         (
             f"- **资本回报与股东结构**：最新分红记录为 `{latest_dividend_record.get('quarter')}`，前十大股东合计持股比例约 {unsigned_percent_text(ownership['top10'], 2)}。"
             if latest_dividend_record
@@ -1221,8 +1268,11 @@ def main() -> None:
     appendix_lines = [
         f"- 报告日期为 {report_date.isoformat()}，信息截面为 {as_of_time}。",
         f"- 投资逻辑定义来源：{thesis_source}。",
-        "- 财务数据按季度去重，保留同一季度最新披露版本。",
+        "- 财务数据仅保留披露日不晚于报告日的记录，再按季度选择当时最新版本。",
+        "- 净利润同比按（本期－同期）/同期绝对值计算；同期为零时不计算，负基数须结合减亏、亏损扩大或扭亏解读。",
         "- 公告部分会过滤低信号治理/例行披露，优先保留财报、资本回报、经营催化与治理关键节点，并保留高优先级事项的原文链接。",
+        "- 公告催化仅统计报告日前 30 天至报告日的有效披露；未识别结果只描述已提供样本，不证明没有其他公告。",
+        "- 估值历史区间按有效日期去重并标明实际覆盖；不足两个日期时只展示当前值。",
         (
             f"- 本次共纳入 {len(network_search_findings)} 条网络搜索结果，用于补充公司动态、管理层变化和行业趋势验证。"
             if network_search_findings

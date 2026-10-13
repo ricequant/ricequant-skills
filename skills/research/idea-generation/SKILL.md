@@ -28,6 +28,11 @@ compatibility: "Requires rqdata CLI, Bash, python3. Report structure is managed 
 - 候选名单只代表“进入下一轮研究池的线索”，不代表最终投资结论
 - 缺少数据时必须明确写“无数据 / 未启用该策略 / 未验证”，不能留空
 
+## 财务时点与增速口径
+
+- 历史报告采集财务数据时必须传 `date=REPORT_DATE`；脚本仅保留有效 `info_date <= report-date`，再按股票和季度选择当时最新版本。缺失或无效披露日期的记录不能参与计算。
+- 净利润同比采用 `(本期 - 同期) / abs(同期) * 100`；同期为零或缺失时显示“无数据”。负基数结果表示减亏或亏损扩大，扭亏应明确标注，不能直接解释为常规盈利增长。
+
 ## 数据源分工
 
 ### `RQData CLI` 负责
@@ -79,6 +84,7 @@ compatibility: "Requires rqdata CLI, Bash, python3. Report structure is managed 
 - `[MUST-7]` 若某策略未启用或未形成候选，仍要由 LLM 明确写清该章节当前用途和缺口，不能留空
 - `[MUST-8]` 低置信度外部信息不得改写量化筛选结论或候选优先级
 - `[MUST-9]` 最终输出必须严格来自模板，不得在脚本中自由拼写整篇报告
+- `[MUST-10]` 客户稿不展示内部字段名、文件名或工作流术语；摘要回写使用“披露日”“报告日”“股票池”“未做主题验证”等客户可读表述，生成器发现内部术语时会拒绝渲染
 
 ## 确信度评级
 
@@ -258,6 +264,7 @@ fetch_batches(
         "fields": ["revenue", "net_profit", "total_assets", "total_liabilities"],
         "start_quarter": start_quarter,
         "end_quarter": end_quarter,
+        "date": report_date,
         "statements": "all",
     },
     "financials_history.json",

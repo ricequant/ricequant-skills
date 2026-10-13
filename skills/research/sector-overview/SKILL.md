@@ -30,6 +30,11 @@ compatibility: "Requires rqdata CLI, Bash, python3. Report structure is managed 
 - 最终 Markdown 必须按客户阅读口径呈现，重点输出行业状态判断、龙头梯队、投资线索和跟踪指标，不能把生成过程写进正文
 - 每个主要章节都必须保留 `数据来源：RQData，置信度5`
 
+## 财务时点与增速口径
+
+- 历史报告采集财务数据时必须传 `date=REPORT_DATE`；脚本仅保留有效 `info_date <= report-date`，再按股票和季度选择当时最新版本。缺失或无效披露日期的记录不能参与计算。
+- 净利润同比采用 `(本期 - 同期) / abs(同期) * 100`；同期为零或缺失时显示“无数据”。负基数结果表示减亏或亏损扩大，扭亏应明确标注，不能直接解释为常规盈利增长。
+
 ## 数据源分工
 
 ### `RQData CLI` 负责
@@ -291,6 +296,7 @@ rqdata stock cn financial --payload "{
   \"fields\": [\"revenue\", \"net_profit\", \"gross_profit\", \"total_assets\", \"total_liabilities\", \"cash_from_operating_activities\"],
   \"start_quarter\": \"$HISTORY_START_QUARTER\",
   \"end_quarter\": \"$HISTORY_END_QUARTER\",
+  \"date\": \"$REPORT_DATE\",
   \"statements\": \"all\"
 }" --format json > "$DATA_DIR/historical_financials.json"
 

@@ -119,6 +119,23 @@ def normalize_sector(record: Dict[str, Any]) -> str:
     return str(value).strip() if value not in (None, "") else "未分类"
 
 
+def profit_change_type(current: Optional[float], base: Optional[float]) -> str:
+    """Describe signed profit changes without implying a loss is a profit."""
+    if current is None or base is None:
+        return "无数据"
+    if base == 0:
+        return "同期基数为零"
+    if base < 0:
+        if current > 0:
+            return "扭亏"
+        if current == 0:
+            return "盈亏平衡"
+        return "减亏" if current > base else "亏损扩大" if current < base else "亏损持平"
+    if current < 0:
+        return "转亏"
+    return "利润增长" if current > base else "利润下降" if current < base else "利润持平"
+
+
 def float_or_none(value: Any) -> Optional[float]:
     if value in (None, "", "null"):
         return None
@@ -195,7 +212,7 @@ def build_instrument_map(records: List[Any], stock_ids: Sequence[str]) -> Dict[s
     return result
 
 
-def dedupe_financial_records(records: List[Any], stock_ids: Sequence[str]) -> List[Dict[str, Any]]:
+def dedupe_financial_records(records: List[Any], stock_ids: Sequence[str], report_date: date) -> List[Dict[str, Any]]:
     stock_set = set(stock_ids)
     deduped: Dict[Tuple[str, str], Dict[str, Any]] = {}
     for item in records:
@@ -209,14 +226,16 @@ def dedupe_financial_records(records: List[Any], stock_ids: Sequence[str]) -> Li
         current = deduped.get(key)
         current_date = parse_iso_date(current.get("info_date")) if current else None
         item_date = parse_iso_date(item.get("info_date"))
+        if item_date is None or item_date > report_date:
+            continue
         if current is None or (item_date and (current_date is None or item_date >= current_date)):
             deduped[key] = item
     return list(deduped.values())
 
 
-def build_financial_snapshot(records: List[Any], stock_ids: Sequence[str]) -> Dict[str, Dict[str, Any]]:
+def build_financial_snapshot(records: List[Any], stock_ids: Sequence[str], report_date: date) -> Dict[str, Dict[str, Any]]:
     stock_set = set(stock_ids)
-    deduped = dedupe_financial_records(records, stock_ids)
+    deduped = dedupe_financial_records(records, stock_ids, report_date)
     grouped: Dict[str, List[Dict[str, Any]]] = {stock: [] for stock in stock_set}
     for item in deduped:
         stock = normalize_ticker(item)
@@ -246,7 +265,7 @@ def build_financial_snapshot(records: List[Any], stock_ids: Sequence[str]) -> Di
     return snapshots
 
 
-def latest_factor_map(records: List[Any], stock_ids: Sequence[str], field_name: str) -> Dict[str, float]:
+def latest_factor_map(records: List[Any], stock_ids: Sequence[str], field_name: str, report_date: date) -> Dict[str, float]:
     stock_set = set(stock_ids)
     best: Dict[str, Tuple[date, float]] = {}
     for item in records:
@@ -257,7 +276,7 @@ def latest_factor_map(records: List[Any], stock_ids: Sequence[str], field_name: 
             continue
         event_date = parse_iso_date(item.get("date") or item.get("datetime"))
         value = float_or_none(item.get(field_name))
-        if event_date is None or value is None:
+        if event_date is None or event_date > report_date or value is None:
             continue
         current = best.get(stock)
         if current is None or event_date >= current[0]:
@@ -274,21 +293,21 @@ def build_universe_rows(
     market_cap_records: List[Any],
     pe_records: List[Any],
     pb_records: List[Any],
+    report_date: date,
 ) -> List[Dict[str, Any]]:
     instrument_map = build_instrument_map(instruments, stock_ids)
-    history_snapshot = build_financial_snapshot(history_financials, stock_ids)
-    latest_snapshot = build_financial_snapshot(latest_financials, stock_ids)
-    roe_map = latest_factor_map(roe_records, stock_ids, "return_on_equity_weighted_average")
-    market_cap_map = latest_factor_map(market_cap_records, stock_ids, "market_cap")
-    pe_map = latest_factor_map(pe_records, stock_ids, "pe_ratio")
-    pb_map = latest_factor_map(pb_records, stock_ids, "pb_ratio")
+    financial_snapshot = build_financial_snapshot(history_financials + latest_financials, stock_ids, report_date)
+    roe_map = latest_factor_map(roe_records, stock_ids, "return_on_equity_weighted_average", report_date)
+    market_cap_map = latest_factor_map(market_cap_records, stock_ids, "market_cap", report_date)
+    pe_map = latest_factor_map(pe_records, stock_ids, "pe_ratio", report_date)
+    pb_map = latest_factor_map(pb_records, stock_ids, "pb_ratio", report_date)
 
     rows: List[Dict[str, Any]] = []
     for stock in stock_ids:
         meta = instrument_map.get(stock, {})
-        snapshot = latest_snapshot.get(stock) or history_snapshot.get(stock) or {}
+        snapshot = financial_snapshot.get(stock) or {}
         latest = snapshot.get("latest") or {}
-        yoy = snapshot.get("yoy") or (history_snapshot.get(stock) or {}).get("yoy") or {}
+        yoy = snapshot.get("yoy") or {}
 
         revenue = float_or_none(latest.get("revenue"))
         net_profit = float_or_none(latest.get("net_profit"))
@@ -298,7 +317,7 @@ def build_universe_rows(
         yoy_profit = float_or_none(yoy.get("net_profit"))
 
         revenue_yoy = ((revenue / yoy_revenue - 1.0) * 100.0) if revenue is not None and yoy_revenue not in (None, 0) else None
-        profit_yoy = ((net_profit / yoy_profit - 1.0) * 100.0) if net_profit is not None and yoy_profit not in (None, 0) else None
+        profit_yoy = ((net_profit - yoy_profit) / abs(yoy_profit) * 100.0) if net_profit is not None and yoy_profit not in (None, 0) else None
         debt_ratio = ((total_liabilities / total_assets) * 100.0) if total_liabilities is not None and total_assets not in (None, 0) else None
 
         rows.append(
@@ -313,6 +332,7 @@ def build_universe_rows(
                 "total_liabilities": total_liabilities,
                 "revenue_yoy": revenue_yoy,
                 "profit_yoy": profit_yoy,
+                "profit_change_type": profit_change_type(net_profit, yoy_profit),
                 "debt_ratio": debt_ratio,
                 "roe": roe_map.get(stock),
                 "market_cap": market_cap_map.get(stock),
@@ -488,6 +508,7 @@ def build_overlap_candidates(
                     "pb": item.get("pb"),
                     "revenue_yoy": item.get("revenue_yoy"),
                     "profit_yoy": item.get("profit_yoy"),
+                    "profit_change_type": item.get("profit_change_type"),
                     "strategies": [],
                 },
             )
@@ -501,6 +522,7 @@ def build_overlap_candidates(
 def main() -> None:
     args = parse_args()
     data_dir = Path(args.data_dir).expanduser()
+    report_date = date.fromisoformat(args.report_date)
 
     stock_pool_records = extract_records(read_json_file(data_dir / "stock_pool.json"))
     instrument_records = extract_records(read_json_file(data_dir / "instrument_meta.json"))
@@ -526,6 +548,7 @@ def main() -> None:
         market_cap_records,
         pe_records,
         pb_records,
+        report_date,
     )
     stats = universe_statistics(rows)
 

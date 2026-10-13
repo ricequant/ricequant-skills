@@ -121,6 +121,8 @@
 
 ## 9. `research_reports.json`
 
+支持原始数据包装，也支持摘要整理后的 `{"records": [...]}`；生成器读取其中每条研报，不把包装对象当成单条记录。
+
 典型字段：
 
 - `create_tm`
@@ -193,6 +195,8 @@
 - `sections` 为兼容旧结构保留，当前可视为 `raw_sections` 的兼容镜像
 - `company_intro` / `management_discussion` / `outlook` 主要面向年报、半年报正文；季度报告和临时公告默认不强制抽取这三类字段
 - 若源站拦截或 PDF 不可读，也必须保留失败状态和原文链接，不能静默丢失
+- 公告正文摘要显示时先检查获取/提取状态，再核对对应原文段落。现代 `raw_sections` 记录只有在获取成功、提取成功或部分成功且对应原文非空时才能展示摘要；提取记录数量不等于可用正文摘要数量。旧版 `sections` 仍可读取，显式失败状态同样阻止显示。
+- 风险原文优先定位正式风险章节，跳过目录、开头交叉引用及其他业务章节的“风险提示不适用”；该声明不能用于推断公司没有经营风险。
 - 不额外创建 `announcement_summaries.json`；LLM 应直接在 `announcement_extracts.json` 的 `records[].summaries.*` 中回写结果
 
 ## 12. `web_search_findings.json`
@@ -241,3 +245,7 @@
 - 研报必须做相关性过滤，至少要求标题或摘要命中公司名称/代码/英文名关键词
 - 可直接运行 `earnings-analysis/scripts/extract_announcements.py` 生成该文件；若源站阻断，也应保留失败状态
 - 若存在 `web_search_findings.json`，脚本会校验必填字段、来源类别和置信度上限
+
+- 财务记录先排除缺失 / 无效 `info_date` 及 `info_date > report-date`，再按同一股票同一季度选择当时最新披露版本；采集参数必须传 `date=REPORT_DATE`
+
+- 净利润同比口径：`(本期净利润 - 同期净利润) / abs(同期净利润) * 100`；同期为零或缺失时结果为 `null`。负基数反映盈亏改善 / 恶化，报告须区分减亏、亏损扩大与扭亏。

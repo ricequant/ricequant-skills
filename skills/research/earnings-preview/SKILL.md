@@ -29,6 +29,12 @@ compatibility: "Requires rqdata CLI, Bash, python3. Report structure is managed 
 - 市场预期应优先来自 `stock cn consensus` 与 `stock cn research-reports`，不得伪造 consensus
 - 目标季度预计披露日、电话会和近期行业动态若需要写入正文，必须来自 `web_search`，不能靠训练记忆补写
 - 缺失数据时必须明确写“无数据 / 未提供 / 未验证”，不能留空
+- 公告摘要必须有对应的可读原文段落；提取失败时保留状态与链接，不将失败说明回写成正文摘要。
+
+## 财务时点与增速口径
+
+- 历史报告采集财务数据时必须传 `date=REPORT_DATE`；脚本仅保留有效 `info_date <= report-date`，再按股票和季度选择当时最新版本。缺失或无效披露日期的记录不能参与计算。
+- 净利润同比采用 `(本期 - 同期) / abs(同期) * 100`；同期为零或缺失时显示“无数据”。负基数结果表示减亏或亏损扩大，扭亏应明确标注，不能直接解释为常规盈利增长。
 
 ## 数据源分工
 
@@ -74,7 +80,7 @@ compatibility: "Requires rqdata CLI, Bash, python3. Report structure is managed 
 - `[MUST-1]` 历史财务数据、分析师预期、研报和公告必须来自 `RQData CLI`
 - `[MUST-2]` 目标季度预计披露日必须通过 `web_search` 获取实时信息，不能使用训练记忆
 - `[MUST-3]` 金额类数据必须统一转换为“亿元”等客户可读口径
-- `[MUST-4]` `consensus` 的 `t1/t2/t3` 是年度 forward buckets，不得直接伪装成目标季度单季预测
+- `[MUST-4]` `consensus` 的 `t1/t2/t3` 是年度 forward buckets，不得直接伪装成目标季度单季预测；按 `report_year_t` 映射具体年份，基准年度未验证时明确标注，客户稿不展示字段后缀
 - `[MUST-5]` 情景分析必须包含乐观 / 中性 / 悲观三个情景及对应股价反应区间
 - `[MUST-6]` 研报若进入正文，必须优先消费 `summaries.core_view` 等客户可读摘要层
 - `[MUST-7]` 每个关键数据点或关键结论都要标 `数据来源：XXX，置信度X`
@@ -231,6 +237,7 @@ rqdata stock cn financial --payload "{
   \"fields\": [\"revenue\", \"net_profit\", \"gross_profit\", \"operating_expense\", \"cash_from_operating_activities\"],
   \"start_quarter\": \"$HISTORY_START_QUARTER\",
   \"end_quarter\": \"$HISTORY_END_QUARTER\",
+  \"date\": \"$REPORT_DATE\",
   \"statements\": \"all\"
 }" --format json > "$DATA_DIR/historical_financials.json"
 
@@ -334,6 +341,7 @@ if [ "$PEER_STOCKS_JSON" != "[]" ]; then
     \"fields\": [\"revenue\", \"net_profit\", \"gross_profit\"],
     \"start_quarter\": \"$HISTORY_START_QUARTER\",
     \"end_quarter\": \"$HISTORY_END_QUARTER\",
+    \"date\": \"$REPORT_DATE\",
     \"statements\": \"all\"
   }" --format json > "$DATA_DIR/peers_financials.json"
 fi
