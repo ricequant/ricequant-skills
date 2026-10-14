@@ -17,7 +17,7 @@ rqamsh --help
 rqamsh schema
 ```
 
-`schema` 与 `--help` 离线可用，用于发现操作与参数；终端找不到 `rqamsh` 时先激活安装该包的 Python 环境，或改用 `python -m rqamsh`。
+`schema` 与 `--help` 离线可用，用于发现操作与参数；终端找不到 `rqamsh` 时先激活安装该包的 Python 环境，或改用 `python -m rqamsh`。更新已有安装：拉取仓库最新代码后重跑上面的安装与自检命令，操作有无变化以 `rqamsh schema` 为准。
 
 ## 二、调用
 
@@ -37,14 +37,18 @@ Python 侧先 `rqamsh.init(base_url, cookies={...})`，再用 `rqamsh.<块>.<操
 
 - 克隆后本地检索（可跨页 grep）：`git clone --depth 1 https://github.com/ricequant/rqams-harness.git`
 - 按页读原文（无需克隆，适合克隆受限的网络）：`https://raw.githubusercontent.com/ricequant/rqams-harness/main/<path>`（`<path>` 是仓库内相对路径，如 `docs/balances.md`），读工具可按行区间分段取用，不必整页加载。
+- 文档随仓库更新、没有自动推送：每次任务开始时重新获取（重新 `clone --depth 1`，或对已有的本地副本先 `git pull`），不要复用旧副本；`raw` 单页读的一直是默认分支上的最新内容。
 
-入口按顺序读，不要一次读多页：`README.md` → `docs/index.md` → 目标业务页 `docs/<块>.md` → 有字段页的块再读 `docs/fields/<块>.md`（`docs/fields/` 只覆盖承载对象的块，字段页清单见 `docs/index.md`）。
+入口按顺序读，不要一次读多页：`README.md` → `docs/index.md` → `docs/connection.md`（连接、等待、错误、未就绪与取数节奏）→ 目标业务页 `docs/<块>.md` → 有字段页的块再读 `docs/fields/<块>.md`（`docs/fields/` 只覆盖承载对象的块，字段页清单见 `docs/index.md`）。
+
+开工前必读：先在 `docs/index.md` 读「常见场景」「口径速查」与「必要边界」（后者含执行与交付纪律），再读 `docs/connection.md` 与目标业务页，然后才开始调用；不要凭字段名或操作名推断业务口径，口径以权威页为准。
 
 ## 四、检索
 
 - `docs/*.md` 的行尾由取文档方式决定：Windows 上 `git clone`（`core.autocrlf=true`）得到 CRLF，Linux 与 raw 单页是 LF。因此 `grep` 模式统一不要带 `$` 锚，写 `^## get`，不要写 `^## get$`。
-- 操作标题有两级粒度：多数操作有独立的 `## <方法名>` 小节，少数族级小节把若干操作写在正文里。本地副本固定三步：`grep -n "^## " docs/<块>.md` 看结构 → `grep -n "<块>\.<操作>" docs/*.md` 取页与行号 → 只读该行号附近的区间。只读 raw 时没有跨页 grep，改用 `docs/index.md` 的导航加页内 `## ` 小节定位，需要跨页找操作名时再克隆。
-- 单页可能很大（`docs/analytics.md` 1500+ 行、`docs/fields/balances.md` 460+ 行），不要整页读，也不要一次读多页。
+- 操作标题有两级粒度：多数操作有独立的 `## <方法名>` 小节，少数族级小节把若干操作写在正文里。本地副本固定三步：`grep -n "^## " docs/<块>.md` 看结构 → `grep -rn "<块>\.<操作>" docs` 取页与行号（`-r` 是为了带上子页） → 只读该行号附近的区间。只读 raw 时没有跨页 grep，改用 `docs/index.md` 的导航加页内 `## ` 小节定位，需要跨页找操作名时再克隆。
+- 一个业务块可能不止一页：`analytics` 块是块入口页 `docs/analytics/index.md`（块总述、跨族场景表、接口公共约定、四页导航）加 `docs/analytics/` 下的四个主题子页（`metrics`、`holdings_analysis`、`attribution`、`portfolio_analysis`）。查该块的操作先看入口页的「页面划分」，再只读命中的子页；子页不重复场景表与接口约定，需要时点回入口页。
+- 单页可能很大（`docs/analytics/metrics.md` 470 行、`docs/fields/balances.md` 460 行），不要整页读，也不要一次读多页。
 - 文档与本地安装版本不一致时，以 `rqamsh schema` 的运行时输出为准。
 
 ## 五、`rqamsh` 未覆盖时
