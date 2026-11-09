@@ -1,6 +1,6 @@
 ---
 name: rqams
-description: 处理 RQAMS 数据查询和操作时使用。默认走 rqamsh（rqams-harness 的 Python API 与 CLI）；rqams-cli 与 rqamsc-python 是既往的 rqamsc CLI 与 Python SDK 路径，仅作过渡，只在 rqamsh 未覆盖目标操作或用户明确要求时使用。
+description: 用户需要了解 AMS 概念、首次上手、查询业务数据、解释结果或执行业务操作时使用，包括产品、估值、净值、持仓、对账、归因与导入异常。默认路径为 rqamsh。
 ---
 
 # RQAMS
@@ -9,7 +9,9 @@ RQAMS 业务数据的默认入口是 `rqamsh`（`rqams-harness` 项目）；`rqa
 
 ## 一、默认路径：rqamsh
 
-先读 `rqamsh/SKILL.md`——安装与自检、调用形态、文档从哪里取与怎么检索都在那里；连接参数的位置与会话注入、能力边界、字段语义以它指向的 [ricequant/rqams-harness](https://github.com/ricequant/rqams-harness) 仓库 `README.md` 与 `docs/` 为准。本文件不重复它的命令字段与返回结构。
+先读 `rqamsh/SKILL.md`——安装与版本更新、调用形态、文档从哪里取与怎么检索都在那里；连接参数的位置与会话注入、能力边界、字段语义以它指向的 [ricequant/rqams-harness](https://github.com/ricequant/rqams-harness) 仓库 `README.md` 与 `docs/` 为准。本文件不重复它的命令字段与返回结构。
+
+用户说业务目标，Agent 负责查文档、选操作、解释必要概念并验收结果；不要把文档链接、命令清单或一次接口成功当成答案。首次使用和任务关键阶段的必读入口在子技能「三、取文档」；明确目标后直接推进，不重复询问角色。
 
 ## 二、业务链路判断（三个路径通用）
 
