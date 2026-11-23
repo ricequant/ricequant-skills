@@ -9,7 +9,7 @@ RQAMS 业务数据的默认入口是 `rqamsh`（`rqams-harness` 项目）；`rqa
 
 ## 一、默认路径：rqamsh
 
-先读 `rqamsh/SKILL.md`——安装与版本更新、调用形态、文档从哪里取与怎么检索都在那里；连接参数的位置与会话注入、能力边界、字段语义以它指向的 [ricequant/rqams-harness](https://github.com/ricequant/rqams-harness) 仓库 `README.md` 与 `docs/` 为准。本文件不重复它的命令字段与返回结构。
+先读 `rqamsh/SKILL.md`，再按其中的目标入口定位当前 SDK 随附的离线业务文档。连接、调用、字段与业务口径按随包文档和当前运行时契约，不混用在线开发分支。
 
 用户说业务目标，Agent 负责查文档、选操作、解释必要概念并验收结果；不要把文档链接、命令清单或一次接口成功当成答案。首次使用和任务关键阶段的必读入口在子技能「三、取文档」；明确目标后直接推进，不重复询问角色。
 
@@ -33,4 +33,4 @@ RQAMS 业务数据的默认入口是 `rqamsh`（`rqams-harness` 项目）；`rqa
 
 ## 五、字段来源
 
-不要在本文件维护命令字段或 API schema：`rqamsh` 以 `rqamsh schema` 与 `rqams-harness` 仓库的 `docs/` 为准；`rqams-cli` 以 `rqamsc schema list` 与其缓存命令文档为准；`rqamsc-python` 以子技能初始化脚本生成的索引与 API 文档为准。
+不要在本文件维护命令字段或 API schema：`rqamsh` 的参数用当前操作的 `--help` 或 `rqamsh schema`，语义查 `rqamsh docs` 对应的文档；`rqams-cli` 以 `rqamsc schema list` 与其缓存命令文档为准；`rqamsc-python` 以子技能初始化脚本生成的索引与 API 文档为准。

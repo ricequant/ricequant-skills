@@ -56,11 +56,11 @@ RQData 数据 API 使用指南。支持 A 股、港股、期货、期权、指�
 
 RQAMS 业务向导与数据操作入口，含三个执行路径：**优先 `rqamsh`**（[`rqams-harness`](https://github.com/ricequant/rqams-harness) 项目的 Python API 与 CLI，覆盖产品、估值输入、头寸、净值、分析、对账与模拟交易；当前业务块及操作以运行时 `rqamsh schema` 为准）；`rqams-cli` 与 `rqamsc-python` 是既往的 `rqamsc` CLI 与 Python SDK 路径，作为过渡保留，仅在 `rqamsh` 未覆盖目标操作或用户明确要求使用 `rqamsc` CLI 时使用。
 
-路由与安全准则在 `skills/basic/rqams/SKILL.md`；`rqamsh` 的安装与自检、调用形态、文档检索在 `skills/basic/rqams/rqamsh/SKILL.md`，连接与会话细节以其指向的 `rqams-harness` 仓库 `README.md` 与 `docs/` 为准；业务链路判断（估值主链路、托管事件、对账）见 `skills/basic/rqams/references/`。
+路由与安全准则在 `skills/basic/rqams/SKILL.md`；安装与自检、调用方式和随包文档查询在 `skills/basic/rqams/rqamsh/SKILL.md`；业务链路判断（估值主链路、托管事件、对账）见 `skills/basic/rqams/references/`。
 
-新会话先按子技能读取最小向导入口；估值/实时/批量/分析、未就绪和写入分别触发完成条件、等待诊断和计划卡。不要把 API 成功当成任务完成。更新时以整个 `skills/basic/rqams/` 技能族同步安装目录，保留相对路径；已安装副本不会自动跟随源码更新。技能、Harness 包和业务文档独立更新，须一起核对当前契约，不在技能中保留旧 Cookie 调用示例。
+同步整个 `skills/basic/rqams/` 技能族时保留相对路径。安装或更新 Skill 或 SDK 后，运行 `rqamsh docs --skill-dir "<已安装的 rqams/rqamsh 子目录>"` 同步该包自带的文档，或直接读取 `rqamsh docs` 返回的路径；不必另行更新在线文档。估值、分析、缺项和写操作按需查本地的完成条件、等待诊断和授权规则，不能把 API 成功当成任务完成。
 
-**前置要求：** `rqamsh` 路径需可用的 `rqamsh` 模块（`git clone https://github.com/ricequant/rqams-harness.git` 后在该仓库根目录 `python -m pip install -e .`；`python -m pip install rqams-harness` 只在配置了内网 index [pypi.ricequant.com:8080/simple](https://pypi.ricequant.com:8080/simple/) 的环境可用，公开 PyPI 未发布）；CLI 过渡路径需可用的 `rqamsc` 命令，CLI 文档缓存由 `skills/basic/rqams/rqams-cli/scripts/init_skill.py` 从 GitHub 生成；Python 过渡路径需可用的 `rqamsc` Python SDK，具体安装、升级和环境配置以 `skills/basic/rqams/rqamsc-python/` 下的专属文档为准。
+**前置要求：** `rqamsh` 路径需安装含 `docs` 命令的 `rqams-harness`，索引和源码安装见[子技能](skills/basic/rqams/rqamsh/SKILL.md)；CLI 过渡路径需可用的 `rqamsc` 命令，CLI 文档缓存由 `skills/basic/rqams/rqams-cli/scripts/init_skill.py` 从 GitHub 生成；Python 过渡路径需可用的 `rqamsc` Python SDK，安装和升级见其专属子技能。
 
 ---
 

@@ -1,6 +1,6 @@
 # AMS 估值主链路定位
 
-本页用于在三个执行路径之间定位业务层，不定义估值公式、输入采用条件或结果就绪规则。`rqamsh` 的业务权威是[估值主线](https://github.com/ricequant/rqams-harness/blob/dev/docs/index.md#valuation-lifecycle)、[任务完成条件](https://github.com/ricequant/rqams-harness/blob/dev/docs/demo/README.md#task-readiness)与[未就绪处理](https://github.com/ricequant/rqams-harness/blob/dev/docs/connection.md#unready-inputs)。不要用本页的层级定位替代这些规则。
+本页用于在三个执行路径之间定位业务层，不定义估值公式、输入采用条件或结果就绪规则。`rqamsh` 使用当前 SDK 文档中的 `index.md#valuation-lifecycle`、`demo/README.md#task-readiness` 和 `connection.md#unready-inputs`，按 `../rqamsh/SKILL.md` 定位。不要用本页的层级定位替代这些规则。
 
 ## 按用户目标定位
 
@@ -22,4 +22,4 @@
 
 ## 选择执行路径
 
-默认读 `../rqamsh/SKILL.md`，由运行时 schema 确认真实操作命名与参数。仅在 Harness 无对应能力或用户明确要求时，才转 `rqams-cli` / `rqamsc-python`，并读取该路径的技能、当前文档与 schema；不得把路径之间的字段和认证方式互相套用。
+默认读 `../rqamsh/SKILL.md`，由当前操作的 `--help` 或运行时 schema 确认命名与参数。仅在 Harness 无对应能力或用户明确要求时，才转 `rqams-cli` / `rqamsc-python`，并读取该路径的技能、当前文档与 schema；不得把路径之间的字段和认证方式互相套用。
