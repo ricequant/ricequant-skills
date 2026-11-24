@@ -1,6 +1,6 @@
 # RQAMS 通用对账流程
 
-本文是工具无关的 RQAMS 对账处理准则，适用于 `rqamsh`、`rqams-cli` 和 `rqamsc-python`。具体命令字段、SDK 函数和接口参数以各工具的运行时 schema、命令文档或 Python API 文档为准。
+本文供 `rqams-cli` 和 `rqamsc-python` 使用，命令参数以各自的运行时 schema 或 API 文档为准。`rqamsh` 使用独立 Skill 及随包对账文档。
 
 ## 核心原则
 

@@ -9,11 +9,11 @@ RQAMS 业务数据的默认入口是 `rqamsh`（`rqams-harness` 项目）；`rqa
 
 ## 一、默认路径：rqamsh
 
-先读 `rqamsh/SKILL.md`，再按其中的目标入口定位当前 SDK 随附的离线业务文档。连接、调用、字段与业务口径按随包文档和当前运行时契约，不混用在线开发分支。
+优先加载宿主中已安装的独立 `rqamsh` Skill，再按其任务入口使用 SDK 随附的离线业务文档。缺少 Skill 时按 [rqams-harness 安装说明](https://github.com/ricequant/rqams-harness/blob/dev/README.md#agent-skill)接入；已安装时不需要访问该页面。不要因为安装缺失或请求失败而自行换用旧路径。
 
-用户说业务目标，Agent 负责查文档、选操作、解释必要概念并验收结果；不要把文档链接、命令清单或一次接口成功当成答案。首次使用和任务关键阶段的必读入口在子技能「三、取文档」；明确目标后直接推进，不重复询问角色。
+用户说业务目标，Agent 负责查文档、选操作、解释必要概念并验收结果；不要把文档链接、命令清单或一次接口成功当成答案。使用 `rqamsh` 时按独立 Skill 的业务规则，不额外加载下列过渡路径参考。
 
-## 二、业务链路判断（三个路径通用）
+## 二、旧路径的业务链路判断
 
 处理具体任务前，先按 `references/` 判断需求在 AMS 估值主链路中的位置（对象层、输入层、计算层、结果层）：
 
@@ -21,7 +21,7 @@ RQAMS 业务数据的默认入口是 `rqamsh`（`rqams-harness` 项目）；`rqa
 - `references/custodian_event_workflow.md`：托管事件的创建、更新、上传、删除、排查，或用户提到申购、赎回、分红、费用、现金与应收应付调整时。
 - `references/reconciliation_workflow.md`：对账与各类差异排查，或需要判断是否使用自动对账时。
 
-## 三、通用安全要求
+## 三、旧路径的安全要求
 
 - 写操作（创建、更新、删除、上传、重算）除非用户已给出精确指令，执行前必须明确目标资源和关键字段；只有用户明确授权后才执行。
 - 对账、托管事件的写操作分别遵守 `references/reconciliation_workflow.md` 和 `references/custodian_event_workflow.md`：先只读诊断并向用户报告，确认后再执行。

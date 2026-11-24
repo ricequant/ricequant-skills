@@ -5,7 +5,7 @@ description: 过渡路径：用本地 rqamsc CLI 查询和操作 RQAMS 时使用
 
 # RQAMS CLI
 
-> 过渡路径：AMS 业务数据的 Python API 与 CLI 已由 `rqamsh`（`../rqamsh/SKILL.md`）覆盖并优先使用；只有 `rqamsh` 没有目标操作、或用户明确要求 `rqamsc` CLI 时，才用本 skill。
+> 过渡路径：默认使用独立 `rqamsh` Skill，安装入口见 [`rqams`](../SKILL.md)。仅在 `rqamsh` 没有目标操作或用户明确要求 `rqamsc` CLI 时使用本 Skill。
 
 当用户请求可由本地 `rqamsc` 命令完成的 RQAMS 数据查询或操作时，使用此 skill。
 
